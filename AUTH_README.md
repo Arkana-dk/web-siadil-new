@@ -301,3 +301,81 @@ export default async function Page() {
 
 **Dibuat untuk**: Web SIADIL - Sistem Arsip Digital
 **Tech Stack**: Next.js 15, NextAuth.js, TypeScript, Tailwind CSS
+
+
+## ��� Panduan Login Praktis
+
+### Mode Development (Mock Authentication)
+
+Sistem menggunakan **Mock Authentication** untuk testing tanpa perlu API real.
+
+#### Langkah-langkah Login:
+
+1. **Buka browser** → `http://localhost:3001/login`
+
+2. **Gunakan credentials berikut:**
+
+   **Admin Account:**
+   - Username: `admin`
+   - Password: `admin123`
+   - Roles: admin, user
+   - Organization: IT Department
+
+   **User Account:**
+   - Username: `user`
+   - Password: `user123`
+   - Roles: user
+   - Organization: General Department
+
+3. **Klik tombol "Masuk"**
+
+4. **Anda akan redirect ke dashboard** `/dashboard`
+
+### Switching Modes
+
+**Development Mode (Mock) → Production Mode (Real API)**
+
+Edit file `.env.local`:
+
+```env
+# Development Mode (Gunakan Mock Data)
+NEXT_PUBLIC_USE_MOCK_AUTH=true
+
+# Production Mode (Gunakan API Real)
+NEXT_PUBLIC_USE_MOCK_AUTH=false
+```
+
+**Setelah ubah, WAJIB restart server:**
+
+```bash
+# Stop server (Ctrl+C di terminal)
+# Start lagi:
+npm run dev
+```
+
+### Testing Checklist
+
+- [ ] Login dengan admin → Success
+- [ ] Login dengan user → Success
+- [ ] Login dengan credentials salah → Error message muncul
+- [ ] Akses `/dashboard` tanpa login → Redirect ke `/login`
+- [ ] Logout → Redirect ke `/login`
+- [ ] Login lagi → Dashboard accessible
+- [ ] Profile data tampil di sidebar
+- [ ] Session persist setelah refresh
+
+### Troubleshooting Login
+
+**Error: "fetch failed"**
+- API endpoint tidak bisa diakses
+- Tidak terhubung ke VPN/network internal
+- Gunakan Mock Mode untuk testing
+
+**Error: "Username atau password salah"**
+- Mode Development: Gunakan credentials demo di atas
+- Mode Production: Gunakan credentials Demplon Anda
+
+**Session Tidak Tersimpan**
+1. Clear browser cookies
+2. Cek `NEXTAUTH_SECRET` di `.env.local`
+3. Pastikan `Providers` wrapper ada di `layout.tsx`
