@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 📁 SIADIL - Sistem Arsip Digital
 
 Web application untuk sistem manajemen arsip digital Demplon, dibangun dengan Next.js 15, TypeScript, dan Tailwind CSS.
@@ -240,5 +239,7 @@ Developed by Demplon IT Team
 **Last Updated:** October 2025  
 **Status:** ✅ Production Ready
 =======
+
 # website-siadil
->>>>>>> f6fd35157e148b9c4d6d14348796616f8458476a
+
+> > > > > > > f6fd35157e148b9c4d6d14348796616f8458476a
