@@ -1,245 +1,335 @@
+<div align="center">
+
 # 📁 SIADIL - Sistem Arsip Digital
 
-Web application untuk sistem manajemen arsip digital Demplon, dibangun dengan Next.js 15, TypeScript, dan Tailwind CSS.
+**Modern Document Management System**
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
+[![NextAuth](https://img.shields.io/badge/NextAuth-4.24-purple?style=for-the-badge&logo=auth0)](https://next-auth.js.org/)
+
+</div>
+
+---
+
+## 📋 Table of Contents
+
+- [✨ Features](#-features)
+- [🚀 Quick Start](#-quick-start)
+- [🔐 Authentication](#-authentication)
+- [📚 Documentation](#-documentation)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [📁 Project Structure](#-project-structure)
+- [🔧 Development](#-development)
+- [🚀 Deployment](#-deployment)
+- [🤝 Contributing](#-contributing)
+
+---
 
 ## ✨ Features
 
-- 🔐 **Authentication System** - Login dengan NextAuth.js terintegrasi dengan API Demplon
-- 📊 **Dashboard** - Dashboard utama dengan overview data
-- 📄 **Document Management** - Sistem manajemen dokumen dan arsip
-- 👥 **User Profile** - Profile dengan foto dari API dan informasi organisasi
-- 🔒 **Protected Routes** - Middleware untuk proteksi halaman
-- 🎨 **Modern UI** - Design modern dengan Tailwind CSS
-- 📱 **Responsive** - Mobile-friendly design
+<div align="center">
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🔐 **Authentication** | NextAuth.js + API SSO Integration | ✅ Ready |
+| 📊 **Dashboard** | Modern responsive dashboard | ✅ Ready |
+| 📄 **Document Management** | Full CRUD operations | ✅ Ready |
+| 👥 **User Profiles** | Dynamic profiles with photos | ✅ Ready |
+| 🔒 **Protected Routes** | Middleware-based protection | ✅ Ready |
+| 🎨 **Modern UI** | Tailwind CSS + Radix UI | ✅ Ready |
+| 📱 **Responsive Design** | Mobile-first approach | ✅ Ready |
+
+</div>
+
+### 🎯 Core Capabilities
+
+- **🔑 Single Sign-On (SSO)** - Seamless integration with Pupuk Kujang API
+- **📱 Progressive Web App** - Modern web technologies
+- **⚡ Real-time Updates** - Live data synchronization
+- **🛡️ Enterprise Security** - Role-based access control
+- **📊 Analytics Dashboard** - Document insights and reports
+- **🔍 Advanced Search** - Full-text search capabilities
+- **📎 File Management** - Upload, organize, and share documents
+
+---
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
+
+- **Node.js** 18+ 
+- **npm** or **yarn**
+- **Git**
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/Arkana-dk/web-siadil-new.git
+cd web-siadil-new
+```
+
+### 2️⃣ Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Setup Environment Variables
+### 3️⃣ Environment Setup
 
-Create `.env.local` file:
+Create `.env.local` file in root directory:
 
 ```env
-# NextAuth Configuration
+# Application
 NEXTAUTH_URL=http://localhost:3001
-NEXTAUTH_SECRET=your-super-secret-key-change-this-in-production
+NEXTAUTH_SECRET=your-super-secret-key-min-32-characters
 
-# API Configuration
+# API Configuration  
 NEXT_PUBLIC_API_URL=https://api.pupuk-kujang.co.id/demplon
+NEXT_PUBLIC_USE_MOCK_AUTH=true
+
+# Optional
+NODE_ENV=development
 ```
 
-### 3. Run Development Server
+> 💡 **Tip:** Set `NEXT_PUBLIC_USE_MOCK_AUTH=false` for production
+
+### 4️⃣ Run Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) with your browser.
+🎉 **Open [http://localhost:3001](http://localhost:3001) in your browser**
 
-### 4. Login
+### 5️⃣ Login
 
-Navigate to `/login` and use your Demplon credentials to access the system.
+**Development Mode:**
+- **Admin:** `admin` / `admin123`
+- **User:** `user` / `user123`
+
+**Production Mode:**
+- Use your Pupuk Kujang credentials
+
+---
+
+## 🔐 Authentication
+
+SIADIL uses **NextAuth.js v4** with custom credentials provider for seamless SSO integration.
+
+### Authentication Flow
+
+```mermaid
+graph LR
+    A[User Login] --> B[NextAuth]
+    B --> C[API Call]
+    C --> D[Validate Credentials]
+    D --> E[Create Session]
+    E --> F[Redirect Dashboard]
+```
+
+### Session Management
+
+- **Strategy:** JWT-based sessions
+- **Duration:** 30 days (configurable)
+- **Security:** httpOnly cookies + CSRF protection
+- **Access Token:** Automatically stored and refreshed
+
+---
 
 ## 📚 Documentation
 
-- **[QUICK_SETUP.md](./QUICK_SETUP.md)** - Quick setup guide untuk memulai
-- **[AUTH_README.md](./AUTH_README.md)** - Dokumentasi lengkap sistem autentikasi
-- **[API_INTEGRATION.md](./API_INTEGRATION.md)** - Detail integrasi dengan API Demplon
-- **[API_TEST.md](./API_TEST.md)** - Cara test API login
+| Document | Description | Updated |
+|----------|-------------|---------|
+| **[AUTH_README.md](./AUTH_README.md)** | Complete authentication guide + login tutorial | ✅ Latest |
+| **[ACCESS_TOKEN_GUIDE.md](./ACCESS_TOKEN_GUIDE.md)** | API integration + practical examples | ✅ Latest |
+| **[API_INTEGRATION.md](./API_INTEGRATION.md)** | Backend API integration details | ✅ |
+| **[QUICK_SETUP.md](./QUICK_SETUP.md)** | Step-by-step setup guide | ✅ |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues & solutions | ✅ |
+
+### Development Guides
+
+- **[API_TEST.md](./API_TEST.md)** - API testing with examples
+- **[CURRENT_STATUS.md](./CURRENT_STATUS.md)** - Project status tracking
+- **[VPN_USAGE_GUIDE.md](./VPN_USAGE_GUIDE.md)** - Network configuration
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Framework:** Next.js 15 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **Authentication:** NextAuth.js
-- **UI Components:** Radix UI, Lucide Icons
-- **State Management:** React Hooks
-- **Date Handling:** date-fns
-- **Notifications:** Sonner
+### Core Technologies
+
+<div align="center">
+
+| Category | Technology | Version | Purpose |
+|----------|------------|---------|---------|
+| **Framework** | Next.js | 15.5.2 | React framework with App Router |
+| **Language** | TypeScript | ^5.0 | Type-safe development |
+| **Styling** | Tailwind CSS | ^3.4.17 | Utility-first CSS framework |
+| **Auth** | NextAuth.js | ^4.24.11 | Authentication & session management |
+
+</div>
+
+### UI & Components
+
+- **Radix UI** - Accessible component primitives
+- **Lucide React** - Beautiful icon library
+- **Sonner** - Toast notifications
+- **React Hook Form** - Form handling
+
+### Development
+
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Husky** - Git hooks
+- **TypeScript** - Static type checking
+
+---
 
 ## 📁 Project Structure
 
 ```
 src/
-├── app/
-│   ├── api/auth/[...nextauth]/  # NextAuth API routes
-│   ├── login/                    # Login page
-│   ├── dashboard/                # Dashboard & sub-pages
-│   │   ├── siadil/              # SIADIL main app
-│   │   ├── profile/             # User profile
-│   │   └── ...                  # Other modules
-│   ├── layout.tsx               # Root layout with providers
-│   └── page.tsx                 # Landing page
-├── components/
-│   ├── ProfileSection.tsx       # User profile with logout
-│   ├── Sidebar.tsx              # Navigation sidebar
-│   ├── Providers.tsx            # SessionProvider wrapper
-│   └── ui/                      # Reusable UI components
-├── lib/
-│   ├── auth.ts                  # NextAuth configuration
-│   └── utils.ts                 # Utility functions
-├── types/
-│   └── next-auth.d.ts           # NextAuth type definitions
-└── middleware.ts                # Route protection middleware
+├── app/                          # Next.js App Router
+│   ├── api/auth/[...nextauth]/  # Authentication API
+│   ├── login/                   # Login page
+│   ├── dashboard/               # Protected dashboard
+│   │   ├── siadil/             # Main SIADIL app
+│   │   ├── profile/            # User profile
+│   │   ├── e-prosedure/        # E-procedure module
+│   │   ├── employe-directory/  # Employee directory
+│   │   └── ...                 # Other modules
+│   ├── layout.tsx              # Root layout
+│   └── page.tsx                # Landing page
+├── components/                  # Reusable components
+│   ├── ProfileSection.tsx      # User profile widget
+│   ├── Sidebar.tsx             # Navigation sidebar
+│   ├── Providers.tsx           # Context providers
+│   └── ui/                     # UI components
+├── lib/                        # Utilities & configurations
+│   ├── auth.ts                 # NextAuth configuration
+│   ├── api.ts                  # API utility functions
+│   └── utils.ts                # Helper functions
+├── types/                      # TypeScript definitions
+│   └── next-auth.d.ts          # NextAuth types
+└── middleware.ts               # Route protection
 ```
-
-## 🔐 Authentication Flow
-
-1. User enters credentials at `/login`
-2. NextAuth calls API: `POST /auth/login`
-3. API validates and returns user data
-4. Session created with JWT token
-5. User redirected to `/dashboard`
-6. Protected routes check session via middleware
-
-## 🎨 Key Features Detail
-
-### Login System
-
-- Modern gradient design
-- Show/hide password toggle
-- Real-time error handling
-- Loading states
-- API integration with Demplon backend
-
-### Profile Section
-
-- User photo from API (with fallback)
-- Display name, username, organization
-- Logout button on hover
-- Responsive for collapsed sidebar
-
-### Document Management (SIADIL)
-
-- Create, read, update, delete documents
-- Archive management
-- Search and filter
-- Tag management
-- History tracking
-
-## 🔧 Development
-
-### Run Development Server
-
-```bash
-npm run dev
-```
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
-### Lint Code
-
-```bash
-npm run lint
-```
-
-## 🐛 Troubleshooting
-
-### CORS Error
-
-API must allow requests from your domain. Contact backend team.
-
-### Session Not Persisting
-
-1. Restart dev server after changing `.env.local`
-2. Clear browser cookies
-3. Check `NEXTAUTH_SECRET` is set
-
-### Photo Not Loading
-
-- Ensure photo URL is HTTPS
-- Check CORS settings on image server
-- Fallback to initials works automatically
-
-## 📝 Environment Variables
-
-```env
-# Required
-NEXTAUTH_URL=http://localhost:3001
-NEXTAUTH_SECRET=<random-32-char-string>
-NEXT_PUBLIC_API_URL=https://api.pupuk-kujang.co.id/demplon
-
-# Optional (for production)
-NODE_ENV=production
-```
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-1. Push code to GitHub
-2. Import project to Vercel
-3. Set environment variables
-4. Deploy
-
-### Other Platforms
-
-Compatible with any Node.js hosting:
-
-- Netlify
-- Railway
-- AWS
-- Google Cloud
-
-## 📦 Dependencies
-
-### Core
-
-- next: 15.5.2
-- react: 19.1.0
-- typescript: ^5
-
-### Authentication
-
-- next-auth: latest
-- bcryptjs: latest
-
-### UI
-
-- tailwindcss: ^3.4.17
-- @radix-ui/react-\*: latest
-- lucide-react: ^0.544.0
-
-### Utilities
-
-- date-fns: ^4.1.0
-- clsx: ^2.1.1
-- sonner: ^2.0.7
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
-
-## 📄 License
-
-This project is proprietary software for Demplon internal use.
-
-## 👥 Team
-
-Developed by Demplon IT Team
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** October 2025  
-**Status:** ✅ Production Ready
-=======
+## � Development
 
-# website-siadil
+### Available Scripts
 
-> > > > > > > f6fd35157e148b9c4d6d14348796616f8458476a
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Utils
+npm run clean        # Clean build cache
+npm run type-check   # TypeScript checking
+```
+
+### Development Workflow
+
+1. **Branch from main-new**
+2. **Make changes**
+3. **Test thoroughly**
+4. **Submit pull request**
+
+### Code Quality
+
+- **ESLint** configuration for consistent code style
+- **TypeScript** for type safety
+- **Prettier** for code formatting
+- **Husky** for pre-commit hooks
+
+---
+
+## 🚀 Deployment
+
+### Production Checklist
+
+- [ ] Set `NEXT_PUBLIC_USE_MOCK_AUTH=false`
+- [ ] Configure production `NEXTAUTH_URL`
+- [ ] Generate secure `NEXTAUTH_SECRET`
+- [ ] Verify API endpoints accessibility
+- [ ] Test authentication flow
+- [ ] Enable HTTPS
+
+### Deployment Platforms
+
+#### Vercel (Recommended)
+
+```bash
+npm i -g vercel
+vercel
+```
+
+#### Docker
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+#### Other Platforms
+
+- **Railway** - `railway deploy`
+- **Netlify** - Connect repository
+- **AWS/GCP** - Use Docker image
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our contributing guidelines.
+
+### Development Setup
+
+1. Fork the repository
+2. Clone your fork
+3. Create feature branch: `git checkout -b feature/amazing-feature`
+4. Make changes and test
+5. Commit: `git commit -m 'Add amazing feature'`
+6. Push: `git push origin feature/amazing-feature`
+7. Submit pull request
+
+### Code Style
+
+- Follow TypeScript best practices
+- Use meaningful commit messages
+- Add tests for new features
+- Update documentation
+
+---
+
+## 📄 License
+
+This project is proprietary software for **PT Pupuk Kujang (Demplon)** internal use.
+
+---
+
+## 👥 Team
+
+<div align="center">
+
+**Developed with ❤️ by Demplon IT Team**
+
+[![GitHub](https://img.shields.io/badge/GitHub-Arkana--dk-black?style=flat&logo=github)](https://github.com/Arkana-dk)
+
+---
+
+**Version:** 1.0.0 | **Last Updated:** October 2025 | **Status:** ✅ Production Ready
+
+</div>
