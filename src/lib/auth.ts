@@ -89,8 +89,8 @@ export const authOptions: NextAuthOptions = {
           ) {
             return {
               id: "2",
-              username: "user",
-              name: "User",
+              username: "user demo",
+              name: "User Demo",
               email: "user@example.com",
               pic: "",
               roles: ["user"],
