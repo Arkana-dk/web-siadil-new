@@ -133,7 +133,7 @@ const DocumentView: React.FC<DocumentViewProps> = (props) => {
       </div>
 
       {archives.length > 0 && (
-        <div className="mb-10">
+        <div className="mb-10 space-y-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600">
               <svg
@@ -154,28 +154,78 @@ const DocumentView: React.FC<DocumentViewProps> = (props) => {
               Sub-Archives
             </h2>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
-            {archives.map((archive) =>
-              archive.code === "PERSONAL" ? (
-                <PersonalArchiveCard
-                  key={archive.id}
-                  archive={archive}
-                  onClick={() => onArchiveClick(archive.id)}
-                  userName={userName}
-                  userId={userId}
-                  userPhoto={userPhoto}
-                />
-              ) : (
-                <ArchiveCard
-                  key={archive.id}
-                  archive={archive}
-                  docCount={archiveDocCounts[archive.code] || 0}
-                  onClick={() => onArchiveClick(archive.id)}
-                  onMenuClick={onArchiveMenuClick}
-                />
-              )
-            )}
-          </div>
+
+          {/* Pisahkan Personal dan Company Sub-Archives */}
+          {(() => {
+            const personalArchive = archives.find((a) => a.code === "PERSONAL");
+            const companyArchives = archives.filter(
+              (a) => a.code !== "PERSONAL"
+            );
+
+            return (
+              <div className="space-y-6">
+                {/* Personal Archive - Always show if exists */}
+                {personalArchive && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Personal Sub-Archive
+                    </h3>
+                    <PersonalArchiveCard
+                      archive={personalArchive}
+                      onClick={() => onArchiveClick(personalArchive.id)}
+                      userName={userName}
+                      userId={userId}
+                      userPhoto={userPhoto}
+                    />
+                  </div>
+                )}
+
+                {/* Company Sub-Archives */}
+                {companyArchives.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                        />
+                      </svg>
+                      Company Sub-Archives
+                    </h3>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-6">
+                      {companyArchives.map((archive) => (
+                        <ArchiveCard
+                          key={archive.id}
+                          archive={archive}
+                          docCount={archiveDocCounts[archive.code] || 0}
+                          onClick={() => onArchiveClick(archive.id)}
+                          onMenuClick={onArchiveMenuClick}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

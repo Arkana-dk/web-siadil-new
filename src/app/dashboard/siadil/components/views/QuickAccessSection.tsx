@@ -1,19 +1,11 @@
 "use client";
 
 import React from "react";
-import { Document } from "../../types";
-import { allArchives } from "../../data";
-
-// Helper maps (created once per module)
-const ARCHIVE_BY_ID = new Map<string, string>(
-  allArchives.map((a) => [a.id, a.name])
-);
-const ARCHIVE_BY_CODE = new Map<string, string>(
-  allArchives.map((a) => [a.code, a.name])
-);
+import { Document, Archive } from "../../types";
 
 interface QuickAccessSectionProps {
   documents: Document[];
+  archives: Archive[]; // Add archives prop
   onDocumentClick: (doc: Document) => void;
   isInfoPanelOpen: boolean;
   onViewAll?: () => void;
@@ -21,10 +13,19 @@ interface QuickAccessSectionProps {
 
 const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
   documents,
+  archives,
   onDocumentClick,
   isInfoPanelOpen,
   onViewAll,
 }) => {
+  // Create maps from archives prop
+  const ARCHIVE_BY_ID = new Map<string, string>(
+    archives.map((a) => [a.id, a.name])
+  );
+  const ARCHIVE_BY_CODE = new Map<string, string>(
+    archives.map((a) => [a.code, a.name])
+  );
+
   const formatDate = (iso: string) =>
     new Intl.DateTimeFormat("en-US", {
       day: "2-digit",

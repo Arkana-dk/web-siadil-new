@@ -20,7 +20,7 @@ const getAllDescendantIds = (
 
 export const useData = (currentFolderId: string) => {
   const [documents, setDocuments] = usePersistentDocuments();
-  const [archives, setArchives] = usePersistentArchives();
+  const [archives, setArchives, archivesState] = usePersistentArchives();
 
   const searchableDocuments = useMemo(() => {
     const activeDocuments = documents.filter((doc) => doc.status !== "Trashed");
@@ -128,6 +128,7 @@ export const useData = (currentFolderId: string) => {
     setDocuments,
     archives,
     setArchives,
+    archivesState, // { isLoading, error }
     searchableDocuments,
     documentsForFiltering,
     breadcrumbItems,

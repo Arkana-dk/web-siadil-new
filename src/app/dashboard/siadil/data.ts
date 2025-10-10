@@ -1,190 +1,132 @@
-import { Archive, Document } from "./types";
+import { Archive, Document, DemplanArchiveItem } from "./types";
+import { fetchArchives } from "@/lib/api";
 
-export const allArchives: Archive[] = [
-  {
-    id: "personal-df",
-    name: "Personal",
-    code: "PERSONAL",
-    parentId: "root",
-  },
-  {
-    id: "tik",
-    name: "Teknologi, Informasi & Komunikasi",
-    code: "TIK",
-    parentId: "root",
-  },
-  { id: "legal", name: "Legal", code: "Legal", parentId: "root" },
-  { id: "finance", name: "Finance", code: "Finance", parentId: "root" },
-  { id: "hr", name: "Human Resources", code: "HR", parentId: "root" },
-  { id: "audit", name: "Audit", code: "Audit", parentId: "root" },
-  {
-    id: "tik_laporan",
-    name: "Laporan Bulanan",
-    code: "TIK-Laporan",
-    parentId: "tik",
-  },
-  {
-    id: "tik_proyek",
-    name: "Dokumen Proyek",
-    code: "TIK-Proyek",
-    parentId: "tik",
-  },
+// ============================================
+// NO DUMMY DATA - READY FOR REAL API
+// ============================================
+// All data will come from API only
+// No fallback to dummy data
 
-  {
-    id: "arsip-kosong-test",
-    name: "Arsip Kosong (Test)",
-    code: "TEST-EMPTY",
-    parentId: "root",
-  },
-];
+// ============================================
+// REAL API DATA FETCHING
+// ============================================
 
-const sampleApps = [
-  {
-    number: "JAJAPWEB",
-    title: "JAJAPWEB",
-    description: "Aplikasi Jajap untuk Admin Mengelola Transaksi Jajap",
-  },
-  {
-    number: "JAJAPDRIVER",
-    title: "JAJAPDRIVER",
-    description:
-      "Aplikasi Jajap untuk Request Transformasi Area Kawasan Kujang",
-  },
-  {
-    number: "APM",
-    title: "APM",
-    description:
-      "Aplikasi Performance Monitoring Management untuk Generate Montly Report",
-  },
-  {
-    number: "WEBKUJANGADMIN",
-    title: "WEBKUJANGADMIN",
-    description: "Aplikasi Panel Admin untuk Pengelolaan Website Pupuk Kujang",
-  },
-  {
-    number: "SPIRITK3",
-    title: "SPIRITK3",
-    description: "Aplikasi Safety is Priority yang dikelola oleh Dept K3LH",
-  },
-  {
-    number: "SIMRISKANPER",
-    title: "SIMRISKANPER",
-    description:
-      "Aplikasi Sistem Manajemen Risiko untuk anak perusahaan (dikelola oleh unit Manrisk)",
-  },
-  {
-    number: "SIMRISK",
-    title: "SIMRISK",
-    description:
-      "Aplikasi Sistem Manajemen Risiko (dikelola oleh unit Manrisk)",
-  },
-  {
-    number: "DOKUMENTASIAPLIKASI",
-    title: "Dokumentasi Aplikasi",
-    description: "Pusat dokumentasi untuk semua aplikasi internal perusahaan.",
-  },
-  {
-    number: "DTS 3.1",
-    title: "DTS 3.1",
-    description: "Dokumen Teknis Spesifikasi versi 3.1 untuk proyek baru.",
-  },
-];
+/**
+ * Fetch archives dari Demplon API
+ * Fungsi ini mengambil data arsip dari server dengan authorization dan cookies
+ *
+ * @param accessToken - Access token dari NextAuth session
+ * @returns Promise<Archive[]> - Array of archives dari API
+ *
+ * Proses:
+ * 1. Memanggil API Demplon dengan authorization header
+ * 2. Cookies dikirim otomatis (credentials: 'include')
+ * 3. Transform response dari API ke format Archive
+ * 4. Jika gagal, throw error (NO fallback)
+ *
+ * Response Structure dari API:
+ * [
+ *   {
+ *     "id": 17,
+ *     "slug": "bmuz-tik-teknologi-informasi-komunikasi",
+ *     "code": "TIK",
+ *     "name": "Teknologi, Informasi & Komunikasi",
+ *     "description": "...",
+ *     "id_parent": null,
+ *     "contributors": [...]
+ *   }
+ * ]
+ *
+ * @example
+ * ```typescript
+ * // Di dalam component atau page
+ * import { getArchivesFromAPI } from "./data";
+ *
+ * // Token tidak perlu di-pass, handled otomatis server-side
+ * const archives = await getArchivesFromAPI();
+ * ```
+ */
+export async function getArchivesFromAPI(
+  accessToken?: string | undefined // Optional, untuk backward compatibility
+): Promise<Archive[]> {
+  try {
+    console.log("📡 getArchivesFromAPI() called");
 
-const sampleUserIDs = ["3082625", "3082626", "3082627", "3082628", "3082629"];
-const sampleContributors = [
-  "Budi Santoso",
-  "Siti Aisyah",
-  "Rizki Pratama",
-  "Dewi Lestari",
-  "Agus Wijaya",
-  "Rina Hartono",
-];
-
-const formatDateTime = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-};
-
-export const generateDummyData = (): Document[] => {
-  const generatedDocs: Document[] = [];
-  let docIdCounter = 75000;
-
-  const archivesToFill = allArchives.filter(
-    (a) => a.code !== "PERSONAL" && a.code !== "TEST-EMPTY"
-  );
-
-  archivesToFill.forEach((archive) => {
-    const docCount = 20;
-    const currentYear = new Date().getFullYear();
-
-    for (let i = 0; i < docCount; i++) {
-      docIdCounter++;
-      const appData = sampleApps[docIdCounter % sampleApps.length];
-
-      // Created date di tahun berjalan (sebar sepanjang tahun)
-      const dayOfYear = (docIdCounter % 365) + 1; // 1..365
-      const createdDate = new Date(currentYear, 0, 1);
-      createdDate.setDate(dayOfYear);
-      createdDate.setHours(i % 24, i % 60, 0, 0);
-
-      const updatedDate = new Date(createdDate);
-      updatedDate.setDate(createdDate.getDate() + (i + 1));
-
-      // Expire date: bikin variasi expired, expiring soon (<30 hari), future (>30 hari)
-      // Pola: beberapa pertama expired mundur, beberapa berikutnya dalam 30 hari, sisanya maju acak 31-240 hari
-      let expireDate: Date;
-      if (i < 3) {
-        // sudah lewat 15/30/45 hari
-        expireDate = new Date();
-        expireDate.setDate(expireDate.getDate() - (i + 1) * 15);
-      } else if (i < 8) {
-        // akan kedaluwarsa dalam 5..25 hari
-        const daysAhead = 5 + ((i * 4) % 25); // 5..29
-        expireDate = new Date();
-        expireDate.setDate(expireDate.getDate() + daysAhead);
-      } else {
-        // jauh ke depan 31..240 hari
-        const far = 31 + (docIdCounter % 210); // 31..240
-        expireDate = new Date();
-        expireDate.setDate(expireDate.getDate() + far);
-      }
-
-      const doc: Document = {
-        id: `${docIdCounter}`,
-        parentId: archive.id,
-        number: `${archive.code}-${100 + i}`,
-        title: `${appData.title} (${archive.name})`,
-        description: appData.description,
-        documentDate: createdDate.toISOString().split("T")[0],
-        contributors: [
-          {
-            name: sampleContributors[docIdCounter % sampleContributors.length],
-            role: "Penulis",
-          },
-        ],
-        archive: archive.code,
-        expireDate: expireDate.toISOString().split("T")[0],
-        status: new Date(expireDate) < new Date() ? "Expired" : "Active",
-
-        updatedBy: sampleUserIDs[docIdCounter % sampleUserIDs.length],
-        createdBy: sampleUserIDs[(docIdCounter + 1) % sampleUserIDs.length],
-        createdDate: formatDateTime(createdDate),
-        updatedDate: formatDateTime(updatedDate),
-
-        isStarred: docIdCounter % 10 === 0,
-      };
-      generatedDocs.push(doc);
+    // Token parameter deprecated - sekarang handled server-side via API route
+    if (accessToken) {
+      console.log(
+        "⚠️ Note: accessToken parameter is deprecated and will be ignored"
+      );
+      console.log("   Session is now handled automatically server-side");
     }
-  });
 
-  return generatedDocs;
-};
+    // Call API via internal API route (no CORS, token handled server-side)
+    const response = await fetchArchives();
+    console.log("📦 Raw API response received");
+    console.log("   - Response type:", typeof response);
+    console.log("   - Is array:", Array.isArray(response));
+    console.log(
+      "   - Length:",
+      Array.isArray(response) ? response.length : "N/A"
+    );
 
-export const allDocuments: Document[] = generateDummyData();
+    // Demplon API mengembalikan DIRECT ARRAY:
+    // [{id: 17, ...}, {id: 41, ...}, {id: 42, ...}, ...]
+    if (!Array.isArray(response)) {
+      console.error("⚠️ API response bukan array!");
+      console.log("Response structure:", typeof response, response);
+      throw new Error(
+        "Invalid API response format - expected direct array of archives"
+      );
+    }
+
+    const archivesData: DemplanArchiveItem[] = response;
+    console.log(
+      `✅ Response is direct array with ${archivesData.length} items`
+    );
+
+    // Transform data dari API ke format Archive internal
+    const archives: Archive[] = archivesData.map((item: DemplanArchiveItem) => {
+      // Determine parentId:
+      // - Jika id_parent ada dan tidak null, gunakan itu
+      // - Jika tidak, set ke "root"
+      const parentId = item.id_parent ? String(item.id_parent) : "root";
+
+      return {
+        id: String(item.id),
+        name: item.name,
+        code: item.code,
+        parentId: parentId,
+        // Optional: tambah status berdasarkan last_updated atau field lain
+        status: "active", // Default status, bisa disesuaikan
+      };
+    });
+
+    console.log(`✅ Successfully fetched ${archives.length} archives from API`);
+    console.log("Sample archive:", archives[0]);
+
+    return archives;
+  } catch (error) {
+    console.error("❌ Error fetching archives from API:", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    console.log("⚠️ CANNOT LOAD ARCHIVES - API ERROR");
+    console.log("⚠️ NO DUMMY DATA FALLBACK - Archives will be empty");
+
+    // THROW ERROR - Jangan return dummy data
+    // Biarkan caller handle error
+    throw error;
+  }
+}
+
+// ============================================
+// DOCUMENTS - READY FOR API
+// ============================================
+// Documents will be fetched from API when implemented
+// For now, empty array until API is ready
+export const allDocuments: Document[] = [];
 
 export const expireInOptions = [
   { id: "1w", label: "In 1 Week" },

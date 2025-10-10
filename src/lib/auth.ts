@@ -153,22 +153,20 @@ export const authOptions: NextAuthOptions = {
           );
 
           // Cari token dari berbagai kemungkinan field
-          let accessToken =
+          const accessToken =
             loginData.token || loginData.access_token || loginData.accessToken;
 
           if (!accessToken) {
-            console.warn(
-              "⚠️ API did not return token, generating temporary session token"
-            );
-            // Generate simple session token (untuk fallback)
-            accessToken = `session-${loginData.user.id}-${Date.now()}`;
-            console.log("🔑 Generated token:", accessToken);
-          } else {
-            console.log(
-              "🔑 Token preview:",
-              accessToken.substring(0, 50) + "..."
+            console.error("❌ API did not return access token");
+            throw new Error(
+              "Login berhasil tapi server tidak mengembalikan access token. Hubungi administrator."
             );
           }
+
+          console.log(
+            "🔑 Token preview:",
+            accessToken.substring(0, 50) + "..."
+          );
 
           // Return user data sesuai dengan structure yang dibutuhkan
           return {
@@ -248,15 +246,27 @@ export const authOptions: NextAuthOptions = {
       );
 
       if (token && session.user) {
+        // ⚡ OPTIMIZED: Hanya include data essential untuk mengurangi ukuran cookie
         session.user.id = token.id;
         session.user.username = token.username;
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.pic = token.pic;
+        // Simpan hanya nama roles, bukan full object
         session.user.roles = token.roles;
-        session.user.organization = token.organization;
-        session.user.application = token.application;
-        session.accessToken = token.accessToken; // Masukkan access token ke session
+        // Simpan hanya nama organization
+        if (token.organization && typeof token.organization === "object") {
+          session.user.organization = {
+            id: token.organization.id,
+            name: token.organization.name,
+            leader: token.organization.leader,
+          };
+        }
+        // Skip application details (tidak terlalu penting untuk cookie)
+        // session.user.application = token.application;
+
+        // CRITICAL: accessToken tetap ada di session
+        session.accessToken = token.accessToken;
 
         console.log(
           "🔑 Session.accessToken after save:",

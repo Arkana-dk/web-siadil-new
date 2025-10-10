@@ -1,8 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { Document } from "../../types";
-import { allArchives } from "../../data";
+import { Document, Archive } from "../../types";
 import { useOnClickOutside } from "../../hooks/useOnClickOutside";
 
 type SearchResult = {
@@ -16,6 +15,7 @@ type SearchPopupProps = {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   documents: Document[];
+  archives: Archive[]; // Add archives prop
   onDocumentSelect: (document: Document) => void;
 };
 
@@ -25,6 +25,7 @@ export const SearchPopup = ({
   searchQuery,
   setSearchQuery,
   documents,
+  archives,
   onDocumentSelect,
 }: SearchPopupProps) => {
   const popupRef = useRef<HTMLDivElement>(null);
@@ -49,7 +50,7 @@ export const SearchPopup = ({
     const path = [];
     let currentId = parentId;
     while (currentId !== "root") {
-      const folder = allArchives.find((a) => a.id === currentId);
+      const folder = archives.find((a) => a.id === currentId);
       if (folder) {
         path.unshift(folder.name);
         currentId = folder.parentId;

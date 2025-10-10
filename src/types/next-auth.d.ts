@@ -14,13 +14,7 @@ declare module "next-auth" {
         name: string;
         leader: boolean;
       };
-      application: {
-        id: number;
-        slug: string;
-        name: string;
-        description: string;
-        active: boolean;
-      };
+      // application removed from session to reduce cookie size
     } & DefaultSession["user"];
     accessToken?: string; // Access token untuk API requests
   }

@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "./components/modals/ConfirmationModal";
 import DashboardHeader from "./components/container/DashboardHeader";
 import { AllHistoryModal } from "./components/modals/AllHistoryModal";
+import { DebugArchivesPanel } from "./components/ui/DebugArchivesPanel";
 
 type ReminderTab = "all" | "error" | "warning";
 
@@ -149,6 +150,7 @@ export default function SiadilPage() {
     setDocuments,
     archives,
     setArchives,
+    archivesState, // { isLoading, error }
     searchableDocuments,
     documentsForFiltering,
     breadcrumbItems,
@@ -886,6 +888,7 @@ export default function SiadilPage() {
           {currentFolderId === "root" && (
             <QuickAccessSection
               documents={quickAccessDocuments}
+              archives={archives}
               onDocumentClick={handleQuickAccessClick}
               isInfoPanelOpen={isInfoPanelOpen}
               onViewAll={() => setIsViewAllQAOpen(true)}
@@ -1114,6 +1117,40 @@ export default function SiadilPage() {
                   );
                 case "archives":
                 default:
+                  // Tampilkan error jika ada, otherwise tampilkan archives
+                  if (archivesState.error) {
+                    return (
+                      <div className="space-y-4">
+                        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-6">
+                          <div className="flex items-start space-x-4">
+                            <div className="text-4xl flex-shrink-0">⚠️</div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Failed to Load Archives from API
+                              </h3>
+                              <div className="bg-white dark:bg-gray-800 rounded-md p-3 mb-3">
+                                <p className="text-xs font-mono text-red-600 dark:text-red-400">
+                                  {archivesState.error.message}
+                                </p>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                                The system is ready to receive data from the
+                                Demplon API. Please ensure the API is properly
+                                configured and authorized.
+                              </p>
+                              <button
+                                onClick={() => window.location.reload()}
+                                className="px-4 py-2 bg-demplon text-white rounded-md hover:bg-teal-700 transition-colors text-sm font-medium"
+                              >
+                                🔄 Retry
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <ArchiveView
                       archives={archives.filter((a) => a.parentId === "root")}
@@ -1213,6 +1250,7 @@ export default function SiadilPage() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           documents={searchableDocuments}
+          archives={archives}
           onDocumentSelect={handleSearchSelect}
         />
       )}
@@ -1317,6 +1355,9 @@ export default function SiadilPage() {
         documentsCount={trashedDocuments.length}
         foldersCount={trashedArchives.length}
       />
+
+      {/* Debug Panel - Remove this in production */}
+      {process.env.NODE_ENV === "development" && <DebugArchivesPanel />}
     </>
   );
 }
