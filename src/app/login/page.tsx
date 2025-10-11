@@ -9,7 +9,6 @@ import {
   Shield,
   Lock,
   User,
-  Sparkles,
   FileText,
   Zap,
   CheckCircle2,
@@ -161,36 +160,6 @@ export default function LoginPage() {
                 Masuk ke akun Anda untuk melanjutkan
               </p>
             </div>
-
-            {/* Info Badge */}
-            {process.env.NEXT_PUBLIC_USE_MOCK_AUTH === "true" && (
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-amber-900 text-sm mb-2">
-                      Mode Pengembangan
-                    </p>
-                    <div className="space-y-1.5 text-xs text-amber-800">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                        <span>
-                          <strong>Admin:</strong> admin / admin123
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                        <span>
-                          <strong>User:</strong> user / user123
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Error Message */}
             {error && (

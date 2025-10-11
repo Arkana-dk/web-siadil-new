@@ -15,8 +15,6 @@ interface ArchiveViewProps {
   userPhoto?: string;
 }
 
-const ITEMS_PER_PAGE = 8;
-
 const ArchiveView: React.FC<ArchiveViewProps> = ({
   archives,
   archiveDocCounts,
@@ -46,15 +44,20 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({
     return filteredArchives.filter((a) => a.code !== "PERSONAL");
   }, [filteredArchives]);
 
+  // 8 cards total = 1 Personal + 7 Company
+  const COMPANY_PER_PAGE = 7; // 7 company cards per page (Personal selalu tampil)
+
   const paginatedArchives = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const startIndex = (currentPage - 1) * COMPANY_PER_PAGE;
     return companyArchivesFiltered.slice(
       startIndex,
-      startIndex + ITEMS_PER_PAGE
+      startIndex + COMPANY_PER_PAGE
     );
   }, [companyArchivesFiltered, currentPage]);
 
-  const totalPages = Math.ceil(companyArchivesFiltered.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    companyArchivesFiltered.length / COMPANY_PER_PAGE
+  );
 
   const renderPageNumbers = () => {
     const pageNumbers = [];

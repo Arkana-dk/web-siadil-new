@@ -44,11 +44,13 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
   };
 
   const getArchiveName = (doc: Document) =>
+    doc.archiveName ||
     ARCHIVE_BY_ID.get(doc.parentId) ||
     (doc.archive ? ARCHIVE_BY_CODE.get(doc.archive) : undefined) ||
+    doc.archive ||
     "Unknown";
 
-  const getArchiveLabel = (doc: Document) => doc.archive || getArchiveName(doc);
+  const getArchiveLabel = (doc: Document) => getArchiveName(doc);
 
   // Remove any text inside parentheses (and the parentheses) from titles
   const cleanTitle = (title: string) =>

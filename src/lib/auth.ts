@@ -49,71 +49,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Username dan password harus diisi");
         }
 
-        // Development Mode: Mock Data untuk testing
-        const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_AUTH === "true";
-
-        if (USE_MOCK) {
-          console.log("🔧 [DEV MODE] Using mock authentication");
-
-          // Mock users untuk testing
-          if (
-            credentials.username === "admin" &&
-            credentials.password === "admin123"
-          ) {
-            return {
-              id: "1",
-              username: "admin",
-              name: "Administrator",
-              email: "admin@example.com",
-              pic: "",
-              roles: ["admin", "user"],
-              organization: {
-                id: "ORG001",
-                name: "IT Department",
-                leader: true,
-              },
-              application: {
-                id: 1,
-                slug: "siadil",
-                name: "SIADIL",
-                description: "Sistem Arsip Digital",
-                active: true,
-              },
-              accessToken: "mock-token-admin-" + Date.now(), // Mock token
-            };
-          }
-
-          if (
-            credentials.username === "user" &&
-            credentials.password === "user123"
-          ) {
-            return {
-              id: "2",
-              username: "user demo",
-              name: "User Demo",
-              email: "user@example.com",
-              pic: "",
-              roles: ["user"],
-              organization: {
-                id: "ORG002",
-                name: "General Department",
-                leader: false,
-              },
-              application: {
-                id: 1,
-                slug: "siadil",
-                name: "SIADIL",
-                description: "Sistem Arsip Digital",
-                active: true,
-              },
-              accessToken: "mock-token-user-" + Date.now(), // Mock token
-            };
-          }
-
-          throw new Error("Username atau password salah");
-        }
-
-        // Production Mode: Call Real API
+        // Call Real API
         try {
           const apiUrl =
             process.env.NEXT_PUBLIC_API_URL || "https://sso.pupuk-kujang.co.id";

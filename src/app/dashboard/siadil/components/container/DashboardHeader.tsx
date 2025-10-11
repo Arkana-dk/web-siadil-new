@@ -222,7 +222,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
             </div>
 
             {/* Right section - Time and date compact */}
-            <div className="text-right flex-shrink-0">
+            <div className="text-right flex-shrink-0 flex items-center gap-3">
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg px-4 py-2.5 border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-end gap-2 mb-1">
                   <svg

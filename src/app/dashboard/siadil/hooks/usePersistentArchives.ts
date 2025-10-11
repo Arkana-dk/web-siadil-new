@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Archive } from "../types";
-import { getArchivesFromAPI } from "../data";
+import { getArchivesFromAPI, getArchivesTreeFromAPI } from "../data";
 import { getAccessTokenFromServer } from "@/lib/api";
 
 const SIADIL_ARCHIVES_KEY = "siadil_archives_storage";
@@ -53,7 +53,24 @@ export function usePersistentArchives(): [
           console.log("🔑 Using token:", accessToken.substring(0, 30) + "...");
           console.log("🌐 API will be called with token");
 
-          const apiArchives = await getArchivesFromAPI(accessToken);
+          // 🌲 Try to fetch Archives Tree API first (hierarchical structure)
+          console.log("🌲 Attempting to fetch Archives Tree API...");
+          let apiArchives: Archive[];
+
+          try {
+            apiArchives = await getArchivesTreeFromAPI(accessToken);
+            console.log("✅ Archives Tree API loaded successfully!");
+            console.log("   - Total archives:", apiArchives.length);
+            console.log("   - Structure: Hierarchical with children");
+          } catch (treeError) {
+            console.warn(
+              "⚠️ Archives Tree API failed, falling back to flat list"
+            );
+            console.warn("   - Error:", treeError);
+            // Fallback to flat Archives API
+            apiArchives = await getArchivesFromAPI(accessToken);
+            console.log("📁 Flat Archives API loaded as fallback");
+          }
 
           console.log("📦 API Response received:");
           console.log("   - Total archives:", apiArchives.length);

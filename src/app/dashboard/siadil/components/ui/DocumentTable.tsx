@@ -344,9 +344,18 @@ export const DocumentTable = ({
                 )}
                 {visibleColumns.has("archive") && (
                   <td className="px-4 py-4 whitespace-nowrap text-sm">
-                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      {doc.archive}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        {doc.archiveName || doc.archive || "Unknown"}
+                      </span>
+                      {doc.archiveName &&
+                        doc.archive &&
+                        doc.archiveName !== doc.archive && (
+                          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                            Kode: {doc.archive}
+                          </span>
+                        )}
+                    </div>
                   </td>
                 )}
                 {visibleColumns.has("updatedAndCreatedBy") && (

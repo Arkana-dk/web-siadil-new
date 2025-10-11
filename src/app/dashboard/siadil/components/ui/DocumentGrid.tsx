@@ -50,9 +50,21 @@ export const DocumentGrid = ({
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("id-ID");
 
-  const getParentArchiveName = (parentId: string) => {
-    const parent = archives.find((a) => a.id === parentId);
-    return parent ? parent.name : "Root";
+  const getArchiveDisplayName = (doc: Document) => {
+    if (doc.archiveName) {
+      return doc.archiveName;
+    }
+    const byId = archives.find((a) => a.id === doc.parentId);
+    if (byId) {
+      return byId.name;
+    }
+    if (doc.archive) {
+      const byCode = archives.find((a) => a.code === doc.archive);
+      if (byCode) {
+        return byCode.name;
+      }
+    }
+    return "Root";
   };
 
   return (
@@ -162,7 +174,7 @@ export const DocumentGrid = ({
                 {doc.title}
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
-                in {getParentArchiveName(doc.parentId)}
+                in {getArchiveDisplayName(doc)}
               </p>
             </div>
 

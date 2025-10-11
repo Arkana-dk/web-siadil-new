@@ -19,7 +19,7 @@ const getAllDescendantIds = (
 };
 
 export const useData = (currentFolderId: string) => {
-  const [documents, setDocuments] = usePersistentDocuments();
+  const [documents, setDocuments, documentsState] = usePersistentDocuments();
   const [archives, setArchives, archivesState] = usePersistentArchives();
 
   const searchableDocuments = useMemo(() => {
@@ -69,7 +69,7 @@ export const useData = (currentFolderId: string) => {
   }, [currentFolderId, archives]);
 
   const archiveDocCounts = useMemo(() => {
-    return documents
+    const counts = documents
       .filter((doc) => doc.status !== "Trashed")
       .reduce((acc, doc) => {
         const parentArchive = archives.find((a) => a.id === doc.parentId);
@@ -78,6 +78,36 @@ export const useData = (currentFolderId: string) => {
         }
         return acc;
       }, {} as Record<string, number>);
+
+    // 🔍 DEBUG: Log archive counts
+    console.log("📊 Archive Document Counts:");
+    console.log("   - Total archives:", archives.length);
+    console.log(
+      "   - Total active documents:",
+      documents.filter((d) => d.status !== "Trashed").length
+    );
+    console.log("   - Archives with docs:", Object.keys(counts).length);
+    console.log("   - Sample counts:", Object.entries(counts).slice(0, 5));
+
+    // Debug documents without matching archive
+    const docsWithoutArchive = documents.filter((doc) => {
+      const hasArchive = archives.find((a) => a.id === doc.parentId);
+      return !hasArchive && doc.status !== "Trashed";
+    });
+    if (docsWithoutArchive.length > 0) {
+      console.warn(
+        "   ⚠️ Documents without matching archive:",
+        docsWithoutArchive.length
+      );
+      console.warn("   ⚠️ Sample doc:", {
+        id: docsWithoutArchive[0].id,
+        title: docsWithoutArchive[0].title,
+        parentId: docsWithoutArchive[0].parentId,
+        archive: docsWithoutArchive[0].archive,
+      });
+    }
+
+    return counts;
   }, [documents, archives]);
 
   const quickAccessDocuments = useMemo(() => {
@@ -129,6 +159,7 @@ export const useData = (currentFolderId: string) => {
     archives,
     setArchives,
     archivesState, // { isLoading, error }
+    documentsState, // { isLoading, error }
     searchableDocuments,
     documentsForFiltering,
     breadcrumbItems,

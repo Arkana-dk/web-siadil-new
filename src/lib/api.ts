@@ -394,6 +394,110 @@ export async function fetchArchives(_accessToken?: string | undefined) {
   }
 }
 
+/**
+ * Fetch Documents dari Demplon API melalui Next.js API Route
+ *
+ * PENTING: Menggunakan API Route sebagai PROXY untuk menghindari CORS error!
+ *
+ * Flow:
+ * 1. Browser → /api/demplon/documents (Next.js API Route - same origin, no CORS)
+ * 2. API Route → Demplon API (server-side, no CORS restrictions)
+ * 3. API Route → Browser (return data)
+ *
+ * Endpoint Internal: GET /api/demplon/documents
+ * Endpoint Demplon: GET https://demplon.pupuk-kujang.co.id/admin/api/siadil/documents/
+ *
+ * Authorization: Otomatis dari NextAuth session (tidak perlu accessToken parameter)
+ *
+ * @param options - Query parameters:
+ *   - length: number (limit hasil, default 6)
+ *   - reminder_active: boolean (filter dokumen dengan reminder aktif, default true)
+ * @returns Promise<DemplonDocumentItem[]> - Direct array of documents
+ *
+ * Response format (DIRECT ARRAY):
+ * [
+ *   {
+ *     id: 1234,
+ *     number: "DOC-2024-001",
+ *     title: "Laporan Keuangan Q4 2024",
+ *     description: "Laporan keuangan kuartal 4 tahun 2024",
+ *     document_date: "2024-12-31",
+ *     expire_date: "2025-03-31",
+ *     id_archive: 17,
+ *     archive: { id: 17, code: "TIK", name: "Teknologi, Informasi & Komunikasi" },
+ *     reminder_active: true,
+ *     ...
+ *   },
+ *   { id: 1235, ... },
+ *   ...
+ * ]
+ *
+ * @example
+ * ```typescript
+ * import { fetchDocuments } from "@/lib/api";
+ *
+ * // Fetch 6 documents dengan reminder aktif (default)
+ * const documents = await fetchDocuments();
+ *
+ * // Custom parameters
+ * const documents = await fetchDocuments({ length: 10, reminder_active: false });
+ * ```
+ */
+export async function fetchDocuments(options?: {
+  length?: number;
+  reminder_active?: boolean;
+}) {
+  try {
+    const length = options?.length || 6;
+    const reminderActive =
+      options?.reminder_active !== undefined ? options.reminder_active : true;
+
+    console.log("📡 fetchDocuments: Calling internal API route...");
+    console.log("📊 Query params:", {
+      length,
+      reminder_active: reminderActive,
+    });
+
+    // Build URL dengan query params
+    const url = `/api/demplon/documents?length=${length}&reminder_active=${reminderActive}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Include cookies for NextAuth session
+      cache: "no-store", // Don't cache untuk data realtime
+    });
+
+    console.log("📦 fetchDocuments: Response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("❌ fetchDocuments: API Error:", errorData);
+      throw new Error(
+        errorData.message ||
+          `API Error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const result = await response.json();
+
+    // API route returns { success: true, data: [...] }
+    if (result.success && Array.isArray(result.data)) {
+      console.log(`✅ fetchDocuments: Got ${result.data.length} documents`);
+      return result.data;
+    }
+
+    // Fallback if format unexpected
+    console.warn("⚠️ fetchDocuments: Unexpected response format");
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error("❌ fetchDocuments: Error:", error);
+    throw error;
+  }
+}
+
 // ============================================
 // CONTOH PENGGUNAAN:
 // ============================================

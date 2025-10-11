@@ -3,17 +3,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 /**
- * API Route untuk mengambil Archives dari Demplon
+ * API Route untuk mengambil Documents dari Demplon
  *
  * Endpoint ini adalah PROXY yang menghindari CORS error
  * karena request dilakukan dari server-side, bukan browser.
  *
- * Endpoint: GET /api/demplon/archives
+ * Endpoint: GET /api/demplon/documents
+ * Query Params:
+ *   - length: number (limit hasil, default 6)
+ *   - reminder_active: boolean (filter dokumen dengan reminder aktif, default true)
  * Authorization: Otomatis dari NextAuth session
  *
- * @returns Array of archives dari Demplon API
+ * @returns Array of documents dari Demplon API
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Get session dari NextAuth
     const session = await getServerSession(authOptions);
@@ -31,30 +34,39 @@ export async function GET() {
       );
     }
 
-    console.log("📡 Fetching archives from Demplon API...");
+    // Parse query parameters dari URL
+    const { searchParams } = new URL(request.url);
+    const length = searchParams.get("length") || "2000"; // Default 1000 dokumen
+    const reminderActive = searchParams.get("reminder_active") || "false";
+
+    console.log("📡 Fetching documents from Demplon API...");
     console.log("👤 User:", session.user.username, `(${session.user.name})`);
-    console.log("� User ID:", session.user.id);
-    console.log("👤 User Email:", session.user.email);
-    console.log("�🔑 Token available:", !!session.accessToken);
+    console.log("🆔 User ID:", session.user.id);
+    console.log("📧 User Email:", session.user.email);
+    console.log("🔑 Token available:", !!session.accessToken);
     console.log("🔑 Token length:", session.accessToken.length);
     console.log(
       "🔑 Token preview:",
       session.accessToken.substring(0, 30) + "..."
     );
+    console.log("📊 Query params:", {
+      length,
+      reminder_active: reminderActive,
+    });
 
     // TEMPORARY: Log full token in development for debugging
     if (process.env.NODE_ENV === "development") {
       console.log("🔑 [DEV] FULL TOKEN:", session.accessToken);
     }
 
-    // Demplon Archives API endpoint
-    const archivesEndpoint =
-      "https://demplon.pupuk-kujang.co.id/admin/api/siadil/archives/";
+    // Demplon Documents API endpoint - FORMAT SEDERHANA sesuai contoh:
+    // https://demplon.pupuk-kujang.co.id/admin/api/siadil/documents/?length=6&reminder_active=true
+    const documentsEndpoint = `https://demplon.pupuk-kujang.co.id/admin/api/siadil/documents/?length=${length}&reminder_active=${reminderActive}`;
 
-    console.log("\n🔌 Calling:", archivesEndpoint);
+    console.log("\n🔌 Calling:", documentsEndpoint);
 
     // Make request to Demplon API from server-side (no CORS!)
-    const response = await fetch(archivesEndpoint, {
+    const response = await fetch(documentsEndpoint, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
@@ -85,7 +97,9 @@ export async function GET() {
       // Special handling untuk 403 Forbidden
       if (response.status === 403) {
         console.error("🔒 403 FORBIDDEN - Possible causes:");
-        console.error("   1. User tidak punya permission untuk akses archives");
+        console.error(
+          "   1. User tidak punya permission untuk akses documents"
+        );
         console.error("   2. Token SSO tidak valid untuk Demplon API");
         console.error("   3. User belum di-assign ke Demplon system");
         console.error("");
@@ -97,7 +111,7 @@ export async function GET() {
             ", Username=" +
             session.user.username
         );
-        console.error("   - Request role: 'archives.read'");
+        console.error("   - Request role: 'documents.read'");
       }
 
       return NextResponse.json(
@@ -112,7 +126,7 @@ export async function GET() {
               ? {
                   step1: "Contact Demplon admin",
                   step2: `Register user: ${session.user.username} (ID: ${session.user.id})`,
-                  step3: "Grant permission: 'archives.read'",
+                  step3: "Grant permission: 'documents.read'",
                   step4: "Or setup SSO-Demplon integration",
                 }
               : undefined,
@@ -122,38 +136,74 @@ export async function GET() {
     }
 
     // Parse response
-    const data = await response.json();
-    console.log(
-      "📊 Response type:",
-      Array.isArray(data) ? "Array" : typeof data
-    );
-    console.log("📊 Data length:", Array.isArray(data) ? data.length : "N/A");
+    const responseData = await response.json();
+    console.log("📊 Response structure:", {
+      hasData: "data" in responseData,
+      hasLength: "length" in responseData,
+      hasTotal: "total" in responseData,
+      dataType: Array.isArray(responseData.data)
+        ? "Array"
+        : typeof responseData.data,
+    });
 
-    // Validate response is array
-    if (!Array.isArray(data)) {
-      console.error("⚠️ Response bukan array:", typeof data);
+    // Documents API mengembalikan object: { data: [], length: 10, total: 13 }
+    // Bukan langsung array seperti Archives API
+    if (!responseData.data || !Array.isArray(responseData.data)) {
+      console.error("⚠️ Invalid response structure:", typeof responseData);
       return NextResponse.json(
         {
           success: false,
           error: "Invalid response format",
-          message: "Expected array of archives but got " + typeof data,
-          receivedData: data,
+          message: "Expected object with 'data' array property",
+          receivedData: responseData,
         },
         { status: 500 }
       );
     }
 
-    console.log(`✅ Successfully fetched ${data.length} archives`);
+    const documents = responseData.data;
+    console.log(
+      `✅ Successfully fetched ${documents.length} documents (total: ${responseData.total})`
+    );
 
-    // Return data dengan success flag
+    // 🔍 DEBUG: Cek apakah ada dokumen dengan expire date
+    const docsWithExpire = documents.filter(
+      (d: { document_expire_date?: string }) => d.document_expire_date
+    );
+    console.log(
+      `🔍 Documents with document_expire_date: ${docsWithExpire.length} / ${documents.length}`
+    );
+    if (docsWithExpire.length > 0) {
+      console.log("📅 Sample document with expire date:", {
+        id: docsWithExpire[0].id,
+        title: docsWithExpire[0].title,
+        document_expire_date: docsWithExpire[0].document_expire_date,
+        reminder: docsWithExpire[0].reminder,
+        reminder_active: docsWithExpire[0].reminder_active,
+      });
+    } else {
+      console.warn("⚠️ WARNING: NO documents have document_expire_date field!");
+      console.warn("⚠️ This means ALL reminders will be empty!");
+      console.warn(
+        "⚠️ Check Demplon database - are there documents with expire dates?"
+      );
+    }
+
+    // Return data dengan success flag dan metadata lengkap
     return NextResponse.json({
       success: true,
-      data: data,
-      count: data.length,
+      data: documents,
+      count: documents.length,
+      length: responseData.length, // Jumlah yang diminta
+      total: responseData.total, // Total yang tersedia di database
+      queryParams: {
+        length: parseInt(length),
+        reminder_active: reminderActive === "true",
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("❌ Error in archives API route:", error);
+    console.error("❌ Error in documents API route:", error);
 
     return NextResponse.json(
       {
