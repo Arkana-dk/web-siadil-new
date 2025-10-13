@@ -7,6 +7,30 @@ import { getAccessTokenFromServer } from "@/lib/api";
 const SIADIL_ARCHIVES_KEY = "siadil_archives_storage";
 const SIADIL_ARCHIVES_FETCHED_KEY = "siadil_archives_fetched";
 
+/**
+ * Helper function untuk flatten tree structure menjadi flat list
+ * Digunakan untuk convert hierarchical archives ke flat array
+ */
+function flattenArchivesTree(archives: Archive[]): Archive[] {
+  const result: Archive[] = [];
+
+  function traverse(items: Archive[]) {
+    for (const item of items) {
+      // Add item tanpa children untuk flat list
+      const { children, ...flatItem } = item;
+      result.push(flatItem as Archive);
+
+      // Recursively traverse children
+      if (children && children.length > 0) {
+        traverse(children);
+      }
+    }
+  }
+
+  traverse(archives);
+  return result;
+}
+
 export function usePersistentArchives(): [
   Archive[],
   React.Dispatch<React.SetStateAction<Archive[]>>,
@@ -58,10 +82,14 @@ export function usePersistentArchives(): [
           let apiArchives: Archive[];
 
           try {
-            apiArchives = await getArchivesTreeFromAPI(accessToken);
+            const treeArchives = await getArchivesTreeFromAPI(accessToken);
             console.log("✅ Archives Tree API loaded successfully!");
-            console.log("   - Total archives:", apiArchives.length);
+            console.log("   - Total root archives:", treeArchives.length);
             console.log("   - Structure: Hierarchical with children");
+
+            // Flatten tree structure untuk kemudahan penggunaan
+            apiArchives = flattenArchivesTree(treeArchives);
+            console.log("   - Flattened archives:", apiArchives.length);
           } catch (treeError) {
             console.warn(
               "⚠️ Archives Tree API failed, falling back to flat list"

@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { usePersistentDocuments } from "./usePersistentDocuments";
 import { usePersistentArchives } from "./usePersistentArchives";
-import { Archive } from "../types";
+import { Archive, Document } from "../types";
 
 const getAllDescendantIds = (
   folderId: string,
@@ -18,9 +18,89 @@ const getAllDescendantIds = (
   return allChildren;
 };
 
+/**
+ * 🔧 Helper: Extract missing archives dari documents yang tidak ada di archives list
+ * Solusi untuk masalah: documents punya id_archive tapi archive-nya tidak muncul di UI
+ */
+const extractMissingArchivesFromDocuments = (
+  documents: Document[],
+  existingArchives: Archive[]
+): Archive[] => {
+  const existingArchiveIds = new Set(existingArchives.map((a) => a.id));
+  const missingArchivesMap = new Map<string, Archive>();
+
+  documents.forEach((doc) => {
+    // Cek apakah doc.parentId sudah ada di archives
+    if (!existingArchiveIds.has(doc.parentId)) {
+      // Cek apakah document punya data archiveData dari API
+      if (doc.archiveData) {
+        const archiveId = String(doc.archiveData.id || doc.parentId);
+
+        // Jangan tambahkan duplikat
+        if (!missingArchivesMap.has(archiveId)) {
+          const newArchive: Archive = {
+            id: archiveId,
+            name: doc.archiveData.name || "Unknown Archive",
+            code: doc.archiveData.code || "UNKNOWN",
+            parentId: doc.archiveData.id_parent
+              ? String(doc.archiveData.id_parent)
+              : "root",
+            status: "active",
+          };
+          missingArchivesMap.set(archiveId, newArchive);
+        }
+      }
+    }
+  });
+
+  return Array.from(missingArchivesMap.values());
+};
+
 export const useData = (currentFolderId: string) => {
   const [documents, setDocuments, documentsState] = usePersistentDocuments();
   const [archives, setArchives, archivesState] = usePersistentArchives();
+
+  // 🔥 AUTO-ADD MISSING ARCHIVES: Tambahkan archives yang ada di documents tapi tidak ada di archives list
+  useEffect(() => {
+    if (
+      documents.length > 0 &&
+      archives.length > 0 &&
+      !documentsState.isLoading &&
+      !archivesState.isLoading
+    ) {
+      const missingArchives = extractMissingArchivesFromDocuments(
+        documents,
+        archives
+      );
+
+      if (missingArchives.length > 0) {
+        console.log(
+          "🔧 AUTO-FIX: Found missing archives in documents:",
+          missingArchives.length
+        );
+        console.log(
+          "   - Missing archive IDs:",
+          missingArchives.map((a) => `${a.id} (${a.code})`).join(", ")
+        );
+
+        // Merge missing archives ke existing archives
+        setArchives((prev) => {
+          const merged = [...prev, ...missingArchives];
+          console.log(
+            `   - ✅ Added ${missingArchives.length} missing archives to list`
+          );
+          console.log(`   - Total archives now: ${merged.length}`);
+          return merged;
+        });
+      }
+    }
+  }, [
+    documents,
+    archives,
+    documentsState.isLoading,
+    archivesState.isLoading,
+    setArchives,
+  ]);
 
   const searchableDocuments = useMemo(() => {
     const activeDocuments = documents.filter((doc) => doc.status !== "Trashed");

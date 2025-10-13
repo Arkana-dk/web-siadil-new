@@ -16,6 +16,7 @@ export type Document = {
   contributors: Contributor[];
   archive: string;
   archiveName?: string;
+  archiveData?: DocumentArchive; // 🔥 NEW: Store archive object untuk recovery missing archives
   expireDate: string;
   status: string;
   updatedBy: string;

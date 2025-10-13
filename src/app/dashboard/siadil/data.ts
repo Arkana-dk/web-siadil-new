@@ -233,6 +233,7 @@ export async function getDocumentsFromAPI(
       (item: DemplonDocumentItem) => {
         const archiveCode = item.archive?.code || "UNKNOWN";
         const archiveName = item.archive?.name || archiveCode || "Unknown";
+        const archiveDataForRecovery = item.archive; // 🔥 NEW: Simpan archive object
 
         const normalizeDate = (value?: string | null, fallback?: string) => {
           if (!value) {
@@ -403,6 +404,7 @@ export async function getDocumentsFromAPI(
           reminderMessage,
           daysUntilExpire,
           expireStatus,
+          archiveData: archiveDataForRecovery, // 🔥 NEW: Simpan archive object untuk recovery
         };
       }
     );
@@ -535,6 +537,7 @@ export async function getLatestDocumentsFromAPI(
       (item: DemplonDocumentItem) => {
         const archiveCode = item.archive?.code || "UNKNOWN";
         const archiveName = item.archive?.name || archiveCode || "Unknown";
+        const archiveDataForRecovery = item.archive; // 🔥 NEW: Simpan archive object
 
         const normalizeDate = (value?: string | null, fallback?: string) => {
           if (!value) {
@@ -705,6 +708,7 @@ export async function getLatestDocumentsFromAPI(
           reminderMessage,
           daysUntilExpire,
           expireStatus,
+          archiveData: archiveDataForRecovery, // 🔥 NEW: Simpan archive object untuk recovery
         };
       }
     );
