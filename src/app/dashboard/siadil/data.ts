@@ -132,21 +132,22 @@ export async function getArchivesFromAPI(
 // ============================================
 
 /**
- * Fetch documents dari Demplon API
+ * Fetch documents dari Demplon API dengan Pagination Support
  * Fungsi ini mengambil data dokumen dari server dengan authorization
  *
  * @param accessToken - Access token dari NextAuth session (optional, handled server-side)
  * @param options - Query options untuk API
- *   - length: number (limit hasil, default 100)
+ *   - length: number (limit hasil per page, default 300)
+ *   - start: number (offset untuk pagination, default 0)
  *   - reminder_active: boolean (filter dokumen dengan reminder aktif)
- * @returns Promise<Document[]> - Array of documents dari API
+ * @returns Promise<{ documents: Document[], total: number, hasMore: boolean }> - Documents dengan pagination info
  *
  * Response Structure dari API (via /api/demplon/documents):
  * {
  *   "success": true,
  *   "data": [...],    // Array of DemplonDocumentItem
  *   "count": 10,      // Jumlah data yang dikembalikan
- *   "length": 100,    // Limit yang diminta
+ *   "length": 300,    // Limit yang diminta
  *   "total": 45       // Total dokumen di database
  * }
  */
@@ -154,9 +155,10 @@ export async function getDocumentsFromAPI(
   accessToken?: string | undefined,
   options?: {
     length?: number;
+    start?: number;
     reminder_active?: boolean;
   }
-): Promise<Document[]> {
+): Promise<{ documents: Document[]; total: number; hasMore: boolean }> {
   try {
     console.log("📡 getDocumentsFromAPI() called");
 
@@ -168,17 +170,18 @@ export async function getDocumentsFromAPI(
       console.log("   Session is now handled automatically server-side");
     }
 
-    const length = options?.length || 1000; // Default fetch 1000 documents
+    const length = options?.length || 800; // 🔥 UPDATED: Default 800 per page (lebih cepat!)
+    const start = options?.start || 0; // Offset untuk pagination
     const reminderActive =
       options?.reminder_active !== undefined ? options.reminder_active : false;
 
     console.log(
-      `📊 Fetching documents with params: length=${length}, reminder_active=${reminderActive}`
+      `📊 Fetching documents with params: start=${start}, length=${length}, reminder_active=${reminderActive}`
     );
 
-    // Call API via internal API route - FORMAT SEDERHANA
-    // Contoh: /api/demplon/documents?length=1000&reminder_active=false
-    const url = `/api/demplon/documents?length=${length}&reminder_active=${reminderActive}`;
+    // Call API via internal API route dengan pagination support
+    // Contoh: /api/demplon/documents?start=0&length=300&reminder_active=false
+    const url = `/api/demplon/documents?start=${start}&length=${length}&reminder_active=${reminderActive}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -200,10 +203,16 @@ export async function getDocumentsFromAPI(
     }
 
     const result = await response.json();
+    const totalDocuments = result.total || 0;
+    const fetchedCount = result.count || 0;
+    const hasMore = start + fetchedCount < totalDocuments;
+
     console.log("📦 Documents API response received");
     console.log("   - Success:", result.success);
-    console.log("   - Count:", result.count);
-    console.log("   - Total:", result.total);
+    console.log("   - Count:", fetchedCount);
+    console.log("   - Start:", start);
+    console.log("   - Total:", totalDocuments);
+    console.log("   - Has More:", hasMore);
 
     if (!result.success || !Array.isArray(result.data)) {
       console.error("⚠️ Invalid API response format");
@@ -412,7 +421,11 @@ export async function getDocumentsFromAPI(
     console.log(`✅ Successfully transformed ${documents.length} documents`);
     console.log("Sample document:", documents[0]);
 
-    return documents;
+    return {
+      documents,
+      total: totalDocuments,
+      hasMore,
+    };
   } catch (error) {
     console.error("❌ Error fetching documents from API:", error);
     if (error instanceof Error) {
@@ -862,6 +875,168 @@ export async function getArchivesTreeFromAPI(
 
     // THROW ERROR - Jangan return empty array
     throw error;
+  }
+}
+
+/**
+ * 🔥 NEW: Fetch ALL documents dengan pagination otomatis + Progressive Loading
+ * Fungsi ini akan terus fetch documents sampai semua data terambil
+ * SETIAP PAGE LANGSUNG DI-RETURN KE UI (Progressive Loading)
+ *
+ * @param accessToken - Access token (optional)
+ * @param onProgress - Callback untuk update progress dengan DOCUMENTS (optional)
+ * @param onPageLoaded - Callback setiap page berhasil dimuat (untuk progressive UI update)
+ * @returns Promise<Document[]> - SEMUA documents dari API
+ *
+ * Cara kerja:
+ * 1. Fetch page 1 (800 documents) → ✅ LANGSUNG call onPageLoaded → UI update
+ * 2. Fetch page 2 (800 documents) → ✅ LANGSUNG call onPageLoaded → UI update
+ * 3. Fetch page 3 (800 documents) → ✅ LANGSUNG call onPageLoaded → UI update
+ * 4. Continue sampai semua data terambil
+ * 5. Return semua documents
+ *
+ * Contoh:
+ * ```typescript
+ * const allDocs = await getAllDocumentsFromAPI(
+ *   undefined,
+ *   (progress) => {
+ *     console.log(`Progress: ${progress.percentage}%`);
+ *   },
+ *   (documents) => {
+ *     // 🔥 UPDATE UI SETIAP PAGE!
+ *     setDocuments(documents);
+ *   }
+ * );
+ * ```
+ */
+
+// 🔥 GLOBAL LOCK: Prevent multiple simultaneous API fetches
+let isGlobalFetching = false;
+let globalFetchPromise: Promise<Document[]> | null = null;
+
+export async function getAllDocumentsFromAPI(
+  accessToken?: string | undefined,
+  onProgress?: (progress: {
+    page: number;
+    loaded: number;
+    total: number;
+    percentage: number;
+  }) => void,
+  onPageLoaded?: (documents: Document[]) => void // 🔥 NEW: Callback untuk progressive loading
+): Promise<Document[]> {
+  // 🔥 FIX: Jika sudah ada fetch yang berjalan, tunggu dan return hasilnya
+  if (isGlobalFetching && globalFetchPromise) {
+    console.log("⚠️ getAllDocumentsFromAPI() - Another fetch in progress, waiting...");
+    try {
+      const result = await globalFetchPromise;
+      console.log("✅ Reusing result from ongoing fetch:", result.length);
+      return result;
+    } catch (err) {
+      console.error("❌ Ongoing fetch failed, will retry:", err);
+      // Fall through to start new fetch
+    }
+  }
+
+  // � Set global lock
+  isGlobalFetching = true;
+  
+  try {
+    console.log(
+      "�📡 getAllDocumentsFromAPI() - Starting to fetch ALL documents"
+    );
+
+    // 🔥 Create promise untuk shared fetch
+    globalFetchPromise = (async () => {
+
+    const allDocuments: Document[] = [];
+    const PAGE_SIZE = 800; // 🔥 INCREASED: 300 → 800 untuk lebih cepat!
+    let currentPage = 1;
+    let hasMore = true;
+    let totalDocuments = 0;
+
+    while (hasMore) {
+      const start = (currentPage - 1) * PAGE_SIZE;
+      console.log(
+        `📄 Fetching page ${currentPage} (start: ${start}, length: ${PAGE_SIZE})`
+      );
+
+      const result = await getDocumentsFromAPI(accessToken, {
+        start,
+        length: PAGE_SIZE,
+        reminder_active: false,
+      });
+
+      // Update total di page pertama
+      if (currentPage === 1) {
+        totalDocuments = result.total;
+        console.log(`📊 Total documents in database: ${totalDocuments}`);
+      }
+
+      // Gabungkan documents
+      allDocuments.push(...result.documents);
+
+      const loadedCount = allDocuments.length;
+      const percentage =
+        totalDocuments > 0
+          ? Math.round((loadedCount / totalDocuments) * 100)
+          : 100;
+
+      console.log(
+        `✅ Page ${currentPage} fetched: ${result.documents.length} documents`
+      );
+      console.log(
+        `📊 Progress: ${loadedCount}/${totalDocuments} (${percentage}%)`
+      );
+
+      // 🔥 NEW: Call onPageLoaded untuk progressive UI update
+      // Setiap page berhasil dimuat, langsung update UI
+      if (onPageLoaded) {
+        console.log(
+          `🔄 Progressive Loading: Updating UI with ${loadedCount} documents`
+        );
+        onPageLoaded([...allDocuments]); // Pass copy of current documents
+      }
+
+      // Call progress callback
+      if (onProgress) {
+        onProgress({
+          page: currentPage,
+          loaded: loadedCount,
+          total: totalDocuments,
+          percentage,
+        });
+      }
+
+      // Check jika masih ada data
+      hasMore = result.hasMore;
+      currentPage++;
+
+      // Safety check: prevent infinite loop
+      if (currentPage > 1000) {
+        console.warn("⚠️ Safety limit reached (1000 pages). Stopping...");
+        break;
+      }
+    }
+
+    console.log(`✅ getAllDocumentsFromAPI() COMPLETE!`);
+    console.log(`   Total documents fetched: ${allDocuments.length}`);
+    console.log(`   Total pages: ${currentPage - 1}`);
+
+    return allDocuments;
+    })(); // End of globalFetchPromise async IIFE
+    
+    // 🔥 Wait for fetch to complete
+    const result = await globalFetchPromise;
+    return result;
+    
+  } catch (error) {
+    console.error("❌ Error in getAllDocumentsFromAPI:", error);
+    throw error;
+  } finally {
+    // 🔥 Reset global lock setelah selesai
+    console.log("🔓 getAllDocumentsFromAPI() - Releasing global lock");
+    isGlobalFetching = false;
+    globalFetchPromise = null;
   }
 }
 

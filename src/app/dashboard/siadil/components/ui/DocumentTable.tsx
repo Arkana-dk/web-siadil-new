@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Document } from "../../types";
 import { ActionMenu } from "./ActionMenu";
 import { HeaderSortMenu } from "./HeaderSortMenu";
+import { removeDuplicateDocuments } from "@/lib/filterDuplicates";
 // Right-click context menu removed per request
 
 // Context menu state removed
@@ -77,6 +78,11 @@ export const DocumentTable = ({
   const [activeHeaderMenu, setActiveHeaderMenu] =
     useState<ActiveHeaderMenuState>(null);
   // Removed custom context menu logic
+
+  // 🔥 Filter duplicate documents by ID
+  const uniqueDocuments = useMemo(() => {
+    return removeDuplicateDocuments(documents, "id");
+  }, [documents]);
 
   const handleMenuToggle = (docId: string, buttonEl: HTMLButtonElement) => {
     setActiveActionMenu((prev) =>
@@ -208,7 +214,7 @@ export const DocumentTable = ({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
-            {documents.map((doc) => (
+            {uniqueDocuments.map((doc) => (
               <tr
                 key={doc.id}
                 id={`doc-table-${doc.id}`}

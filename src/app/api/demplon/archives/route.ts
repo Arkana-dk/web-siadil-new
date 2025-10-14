@@ -3,18 +3,29 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 /**
- * API Route untuk mengambil Archives dari Demplon
+ * API Route untuk mengambil Archives dari Demplon dengan Pagination Support
  *
  * Endpoint ini adalah PROXY yang menghindari CORS error
  * karena request dilakukan dari server-side, bukan browser.
  *
- * Endpoint: GET /api/demplon/archives
+ * Endpoint: GET /api/demplon/archives?page=1&limit=300
  * Authorization: Otomatis dari NextAuth session
  *
- * @returns Array of archives dari Demplon API
+ * Query Parameters:
+ * - page: number (default: 1) - Halaman yang ingin diambil
+ * - limit: number (default: 300) - Jumlah item per halaman
+ *
+ * @returns Paginated array of archives dari Demplon API
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "300", 10);
+
+    console.log(`📊 Pagination params: page=${page}, limit=${limit}`);
+
     // Get session dari NextAuth
     const session = await getServerSession(authOptions);
 
@@ -143,13 +154,37 @@ export async function GET() {
       );
     }
 
-    console.log(`✅ Successfully fetched ${data.length} archives`);
+    console.log(`✅ Successfully fetched ${data.length} total archives`);
 
-    // Return data dengan success flag
+    // Apply pagination manually (since Demplon API returns all data)
+    const totalItems = data.length;
+    const totalPages = Math.ceil(totalItems / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = data.slice(startIndex, endIndex);
+    const hasMore = page < totalPages;
+
+    console.log(
+      `📄 Returning page ${page}/${totalPages} (${paginatedData.length} items)`
+    );
+    console.log(
+      `   - Range: ${startIndex + 1} to ${Math.min(endIndex, totalItems)}`
+    );
+    console.log(`   - Has more: ${hasMore}`);
+
+    // Return data dengan pagination info
     return NextResponse.json({
       success: true,
-      data: data,
-      count: data.length,
+      data: paginatedData,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalItems,
+        hasMore,
+        startIndex,
+        endIndex: Math.min(endIndex, totalItems),
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -19,6 +19,7 @@ import { useDocumentPagination } from "./hooks/useDocumentPagination";
 import { useDocumentFilters } from "./hooks/useDocumentFilters";
 import { useSelection } from "./hooks/useSelection";
 import { useModals } from "./hooks/useModals";
+import { useScrollPosition } from "./hooks/useScrollPosition";
 import TrashView from "./components/views/TrashView";
 import ManageContributorsModal from "./components/modals/ManageContributorsModal";
 
@@ -73,11 +74,40 @@ const initialNewDocument: NewDocumentData = {
 
 export default function SiadilPage() {
   const { data: session } = useSession();
-  const [currentFolderId, setCurrentFolderId] = useState("root");
+  const [_currentFolderId, _setCurrentFolderId] = useState("root");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [pageView, setPageView] = useState<"archives" | "starred" | "trash">(
     "archives"
   );
+
+  // Hook untuk scroll position persistence
+  const { saveScrollPosition, restoreScrollPosition } =
+    useScrollPosition(_currentFolderId);
+
+  // Wrapper untuk setCurrentFolderId yang menyimpan scroll position
+  const setCurrentFolderId = (
+    newFolderId: string | ((prev: string) => string)
+  ) => {
+    // Handle callback function
+    const resolvedNewFolderId =
+      typeof newFolderId === "function"
+        ? newFolderId(_currentFolderId)
+        : newFolderId;
+
+    // Simpan posisi scroll folder saat ini
+    saveScrollPosition(_currentFolderId);
+
+    // Update folder ID
+    _setCurrentFolderId(resolvedNewFolderId);
+
+    // Restore posisi scroll folder baru setelah render
+    setTimeout(() => {
+      restoreScrollPosition(resolvedNewFolderId);
+    }, 100);
+  };
+
+  // Expose sebagai currentFolderId untuk digunakan di seluruh komponen
+  const currentFolderId = _currentFolderId;
 
   // Log session data untuk debugging
   console.log("Session Data:", session);
@@ -276,11 +306,33 @@ export default function SiadilPage() {
       });
     });
 
-    // 🔍 DEBUG: Log reminder summary
+    // 🔍 DEBUG: Log reminder summary dengan detail expire dates
+    const docsWithExpireDate = baseDocs.filter(
+      (d) => d.expireDate && d.expireDate !== "" && d.status !== "Trashed"
+    );
+    const docsExpired = baseDocs.filter(
+      (d) => d.documentExpired && d.status !== "Trashed"
+    );
+    const docsExpiringSoon = baseDocs.filter(
+      (d) =>
+        !d.documentExpired &&
+        d.daysUntilExpire !== null &&
+        d.daysUntilExpire !== undefined &&
+        d.daysUntilExpire <= 30 &&
+        d.daysUntilExpire >= 0 &&
+        d.status !== "Trashed"
+    );
+
     console.log("🔔 Reminders Summary:");
     console.log("   - Total base documents:", baseDocs.length);
-    console.log("   - Expired count:", expired);
-    console.log("   - Expiring soon count:", expiringSoon);
+    console.log("   - Documents with expireDate:", docsWithExpireDate.length);
+    console.log("   - Documents expired (from API):", docsExpired.length);
+    console.log(
+      "   - Documents expiring soon (calculated):",
+      docsExpiringSoon.length
+    );
+    console.log("   - Expired count (final):", expired);
+    console.log("   - Expiring soon count (final):", expiringSoon);
     console.log("   - Total reminders:", reminders.length);
     console.log(
       "   - Expired reminders:",
@@ -290,6 +342,21 @@ export default function SiadilPage() {
       "   - Warning reminders:",
       reminders.filter((r) => r.type === "warning").length
     );
+
+    // 🔥 Sample expired/expiring documents
+    if (docsWithExpireDate.length > 0) {
+      console.log("   - Sample docs with expireDate:");
+      docsWithExpireDate.slice(0, 5).forEach((doc, idx) => {
+        console.log(
+          `      ${idx + 1}. "${doc.title?.substring(0, 40)}" → Expire: ${
+            doc.expireDate
+          }, Expired: ${doc.documentExpired}, Days: ${doc.daysUntilExpire}`
+        );
+      });
+    } else {
+      console.warn("   ⚠️ NO DOCUMENTS HAVE EXPIRE DATE!");
+      console.warn("   ⚠️ This is why reminders are empty!");
+    }
 
     return {
       dynamicReminders: reminders,
@@ -1002,6 +1069,30 @@ export default function SiadilPage() {
   };
 
   const handleQuickAccessClick = (doc: Document) => {
+    // 🔥 CRITICAL: Update lastAccessed when document is opened
+    const timestamp = new Date().toISOString();
+    console.log(
+      "🔍 [Quick Access] Document clicked:",
+      doc.id,
+      doc.title,
+      "at",
+      timestamp
+    );
+
+    setDocuments((currentDocs) => {
+      const updated = currentDocs.map((d) =>
+        d.id === doc.id ? { ...d, lastAccessed: timestamp } : d
+      );
+
+      const withLastAccessed = updated.filter((d) => d.lastAccessed);
+      console.log(
+        "📝 [Quick Access] Updated documents. Total with lastAccessed:",
+        withLastAccessed.length
+      );
+
+      return updated;
+    });
+
     const docsInTargetFolder = documents.filter(
       (d) => d.parentId === doc.parentId
     );

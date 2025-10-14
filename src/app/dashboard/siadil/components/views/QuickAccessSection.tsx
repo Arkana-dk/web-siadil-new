@@ -15,7 +15,6 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
   documents,
   archives,
   onDocumentClick,
-  isInfoPanelOpen,
   onViewAll,
 }) => {
   // Create maps from archives prop
@@ -56,13 +55,12 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
   const cleanTitle = (title: string) =>
     title.replace(/\s*\([^)]*\)/g, "").trim();
 
-  // When the info panel (sidebar) is open, show only 4 items to fit nicely
-  const displayedDocs = isInfoPanelOpen ? documents.slice(0, 4) : documents;
+  // ✅ NO FILTER - Langsung pakai documents yang masuk (sudah di-filter di useData)
+  // Tampilkan max 6 dokumen (3 atas, 3 bawah)
+  const displayedDocs = documents.slice(0, 6);
 
-  // Use a responsive list layout similar to Reminders (horizontal cards)
-  const gridClasses = isInfoPanelOpen
-    ? "grid-cols-1 md:grid-cols-1 lg:grid-cols-2"
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+  // Grid: 2 rows x 3 columns
+  const gridClasses = "grid-cols-3";
 
   return (
     <div className="mb-10">

@@ -191,26 +191,88 @@ export const useData = (currentFolderId: string) => {
   }, [documents, archives]);
 
   const quickAccessDocuments = useMemo(() => {
-    return [...documents]
-      .filter((doc) => doc.lastAccessed)
+    // Filter dokumen yang aktif (tidak di trash)
+    const activeDocuments = documents.filter((doc) => doc.status !== "Trashed");
+
+    // 🔥 FILTER DUPLICATES: Remove duplicate documents by ID
+    const uniqueDocuments = Array.from(
+      new Map(activeDocuments.map((doc) => [doc.id, doc])).values()
+    );
+
+    // Dokumen yang sudah pernah dibuka (recently accessed)
+    const accessedDocs = uniqueDocuments.filter((doc) => doc.lastAccessed);
+
+    console.log("🎯 [Quick Access Debug]:", {
+      totalDocs: documents.length,
+      activeDocs: activeDocuments.length,
+      uniqueDocs: uniqueDocuments.length,
+      duplicatesRemoved: activeDocuments.length - uniqueDocuments.length,
+      accessedDocs: accessedDocs.length,
+      accessedList: accessedDocs.map((d) => ({
+        id: d.id,
+        title: d.title,
+        lastAccessed: d.lastAccessed,
+      })),
+    });
+
+    // Jika ada dokumen yang pernah dibuka, gunakan itu
+    if (accessedDocs.length > 0) {
+      const sorted = [...accessedDocs]
+        .sort(
+          (a, b) =>
+            new Date(b.lastAccessed!).getTime() -
+            new Date(a.lastAccessed!).getTime()
+        )
+        .slice(0, 6);
+
+      console.log("✅ [Quick Access] Showing accessed docs:", sorted.length);
+      return sorted;
+    }
+
+    // Jika belum ada yang dibuka, tampilkan dokumen terbaru (recently updated) sebagai fallback
+    const recentDocs = [...uniqueDocuments]
       .sort(
         (a, b) =>
-          new Date(b.lastAccessed!).getTime() -
-          new Date(a.lastAccessed!).getTime()
+          new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime()
       )
       .slice(0, 6);
+
+    console.log(
+      "ℹ️ [Quick Access] Showing recent docs (fallback):",
+      recentDocs.length
+    );
+    return recentDocs;
   }, [documents]);
 
   // Semua dokumen yang pernah dibuka (tanpa slice) untuk fitur "Lihat semua"
   const quickAccessAllDocuments = useMemo(() => {
-    return [...documents]
-      .filter((doc) => doc.lastAccessed)
+    const activeDocuments = documents.filter((doc) => doc.status !== "Trashed");
+
+    // 🔥 FILTER DUPLICATES: Remove duplicate documents by ID
+    const uniqueDocuments = Array.from(
+      new Map(activeDocuments.map((doc) => [doc.id, doc])).values()
+    );
+
+    const accessedDocs = uniqueDocuments.filter((doc) => doc.lastAccessed);
+
+    // Jika ada dokumen yang pernah dibuka, gunakan itu
+    if (accessedDocs.length > 0) {
+      return [...accessedDocs]
+        .sort(
+          (a, b) =>
+            new Date(b.lastAccessed!).getTime() -
+            new Date(a.lastAccessed!).getTime()
+        )
+        .slice(0, 20); // View All tampilkan lebih banyak
+    }
+
+    // Fallback: dokumen terbaru
+    return [...uniqueDocuments]
       .sort(
         (a, b) =>
-          new Date(b.lastAccessed!).getTime() -
-          new Date(a.lastAccessed!).getTime()
+          new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime()
       )
-      .slice(0, 10); // batasi View All ke 10 dokumen terbaru
+      .slice(0, 20);
   }, [documents]);
 
   const starredDocuments = useMemo(() => {

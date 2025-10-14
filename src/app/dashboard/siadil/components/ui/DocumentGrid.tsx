@@ -2,9 +2,10 @@
 
 // src/app/dashboard/siadil/components/ui/DocumentGrid.tsx
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Document, Archive } from "../../types";
 import { ActionMenu } from "./ActionMenu";
+import { removeDuplicateDocuments } from "@/lib/filterDuplicates";
 
 // Right-click context menu removed per request
 
@@ -47,6 +48,11 @@ export const DocumentGrid = ({
   }>(null);
   // Removed custom context menu handler
 
+  // 🔥 Filter duplicate documents by ID
+  const uniqueDocuments = useMemo(() => {
+    return removeDuplicateDocuments(documents, "id");
+  }, [documents]);
+
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("id-ID");
 
@@ -76,7 +82,7 @@ export const DocumentGrid = ({
             : "md:grid-cols-3 lg:grid-cols-4"
         }`}
       >
-        {documents.map((doc) => (
+        {uniqueDocuments.map((doc) => (
           <div
             key={doc.id}
             id={`doc-grid-${doc.id}`}

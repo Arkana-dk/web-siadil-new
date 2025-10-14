@@ -3,6 +3,7 @@
 import { useRef, useState, useMemo } from "react";
 import { Document } from "../../types";
 import { useOnClickOutside } from "../../hooks/useOnClickOutside";
+import { removeDuplicateDocuments } from "@/lib/filterDuplicates";
 
 type Props = {
   isOpen: boolean;
@@ -22,17 +23,22 @@ export const ViewAllQuickAccessModal = ({
 
   const [query, setQuery] = useState("");
 
+  // 🔥 Filter duplicate documents first
+  const uniqueDocuments = useMemo(() => {
+    return removeDuplicateDocuments(documents, "id");
+  }, [documents]);
+
   const filtered = useMemo(() => {
-    if (!query) return documents;
+    if (!query) return uniqueDocuments;
     const q = query.toLowerCase();
-    return documents.filter(
+    return uniqueDocuments.filter(
       (d) =>
         d.title.toLowerCase().includes(q) ||
         d.number.toLowerCase().includes(q) ||
         (d.archive || "").toLowerCase().includes(q) ||
         (d.archiveName || "").toLowerCase().includes(q)
     );
-  }, [documents, query]);
+  }, [uniqueDocuments, query]);
 
   if (!isOpen) return null;
 
