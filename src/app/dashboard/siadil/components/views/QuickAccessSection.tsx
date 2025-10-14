@@ -1,19 +1,11 @@
 "use client";
 
 import React from "react";
-import { Document } from "../../types";
-import { allArchives } from "../../data";
-
-// Helper maps (created once per module)
-const ARCHIVE_BY_ID = new Map<string, string>(
-  allArchives.map((a) => [a.id, a.name])
-);
-const ARCHIVE_BY_CODE = new Map<string, string>(
-  allArchives.map((a) => [a.code, a.name])
-);
+import { Document, Archive } from "../../types";
 
 interface QuickAccessSectionProps {
   documents: Document[];
+  archives: Archive[]; // Add archives prop
   onDocumentClick: (doc: Document) => void;
   isInfoPanelOpen: boolean;
   onViewAll?: () => void;
@@ -21,10 +13,18 @@ interface QuickAccessSectionProps {
 
 const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
   documents,
+  archives,
   onDocumentClick,
-  isInfoPanelOpen,
   onViewAll,
 }) => {
+  // Create maps from archives prop
+  const ARCHIVE_BY_ID = new Map<string, string>(
+    archives.map((a) => [a.id, a.name])
+  );
+  const ARCHIVE_BY_CODE = new Map<string, string>(
+    archives.map((a) => [a.code, a.name])
+  );
+
   const formatDate = (iso: string) =>
     new Intl.DateTimeFormat("en-US", {
       day: "2-digit",
@@ -43,23 +43,24 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
   };
 
   const getArchiveName = (doc: Document) =>
+    doc.archiveName ||
     ARCHIVE_BY_ID.get(doc.parentId) ||
     (doc.archive ? ARCHIVE_BY_CODE.get(doc.archive) : undefined) ||
+    doc.archive ||
     "Unknown";
 
-  const getArchiveLabel = (doc: Document) => doc.archive || getArchiveName(doc);
+  const getArchiveLabel = (doc: Document) => getArchiveName(doc);
 
   // Remove any text inside parentheses (and the parentheses) from titles
   const cleanTitle = (title: string) =>
     title.replace(/\s*\([^)]*\)/g, "").trim();
 
-  // When the info panel (sidebar) is open, show only 4 items to fit nicely
-  const displayedDocs = isInfoPanelOpen ? documents.slice(0, 4) : documents;
+  // ✅ NO FILTER - Langsung pakai documents yang masuk (sudah di-filter di useData)
+  // Tampilkan max 6 dokumen (3 atas, 3 bawah)
+  const displayedDocs = documents.slice(0, 6);
 
-  // Use a responsive list layout similar to Reminders (horizontal cards)
-  const gridClasses = isInfoPanelOpen
-    ? "grid-cols-1 md:grid-cols-1 lg:grid-cols-2"
-    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+  // Grid: 2 rows x 3 columns
+  const gridClasses = "grid-cols-3";
 
   return (
     <div className="mb-10">

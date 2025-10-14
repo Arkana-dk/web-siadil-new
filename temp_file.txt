@@ -1,0 +1,341 @@
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
+import { Document } from "../types";
+import { getAllDocumentsFromAPI } from "../data";
+import { getAccessTokenFromServer } from "@/lib/api";
+
+const SIADIL_DOCUMENTS_KEY = "siadil_documents_storage";
+const SIADIL_DOCUMENTS_FETCHED_KEY = "siadil_documents_fetched";
+
+// 🔥 GLOBAL FLAG: Prevent multiple simultaneous fetches
+let isFetchingDocuments = false;
+let documentsCache: Document[] | null = null;
+
+/**
+ * 🔥 Helper function: Deduplicate documents by ID
+ * Saat merge regular + reminder documents, ada kemungkinan dokumen yang sama
+ * Fungsi ini akan ambil unique documents berdasarkan ID
+ * 
+ * @param docs - Array of documents (may contain duplicates)
+ * @returns Array of unique documents
+ */
+function deduplicateDocuments(docs: Document[]): Document[] {
+  const uniqueDocsMap = new Map<string, Document>();
+  
+  docs.forEach((doc) => {
+    const docId = String(doc.id);
+    if (!uniqueDocsMap.has(docId)) {
+      uniqueDocsMap.set(docId, doc);
+    } else {
+      // Jika duplicate, prefer document dengan expireDate (dari reminder API)
+      const existingDoc = uniqueDocsMap.get(docId);
+      if (existingDoc && doc.expireDate && !existingDoc.expireDate) {
+        uniqueDocsMap.set(docId, doc);
+      }
+    }
+  });
+  
+  return Array.from(uniqueDocsMap.values());
+}
+
+export function usePersistentDocuments(): [
+  Document[],
+  React.Dispatch<React.SetStateAction<Document[]>>,
+  {
+    isLoading: boolean;
+    error: Error | null;
+    loadingProgress: {
+      loaded: number;
+      total: number;
+      percentage: number;
+    } | null;
+  }
+] {
+  const { data: session } = useSession();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState<{
+    loaded: number;
+    total: number;
+    percentage: number;
+  } | null>(null);
+
+  // 🔥 FIX: Prevent double fetch dengan useRef
+  const hasFetchedRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    // 🔥 Cleanup function untuk set unmounted flag
+    isMountedRef.current = true;
+
+    async function loadDocuments() {
+      try {
+        console.log("🔄 usePersistentDocuments - Starting load...");
+        console.log("🔑 Session available:", !!session);
+        console.log(
+          "🔑 Session Access token:",
+          session?.accessToken ? "YES ✅" : "NO ❌"
+        );
+
+        // 🔥 FIX: Cek jika sudah pernah fetch, jangan fetch lagi
+        if (hasFetchedRef.current) {
+          console.log("⚠️ Documents already fetched, skipping...");
+          setIsLoading(false);
+          return;
+        }
+
+        // 🔥 FIX: Cek jika sedang fetching, tunggu atau skip
+        if (isFetchingDocuments) {
+          console.log("⚠️ Documents fetch already in progress, skipping...");
+          setIsLoading(false);
+          return;
+        }
+
+        // 🔥 FIX: Jika ada cache dan belum expired, gunakan cache
+        if (documentsCache && documentsCache.length > 0) {
+          console.log("✅ Using cached documents:", documentsCache.length);
+          setDocuments(documentsCache);
+          setIsLoading(false);
+          hasFetchedRef.current = true;
+          return;
+        }
+
+        // Tunggu sampai session ada (user sudah login)
+        if (session) {
+          console.log("📡 Fetching documents from API...");
+
+          // 🔥 Set flag: sedang fetching
+          isFetchingDocuments = true;
+
+          // Fetch token dari server-side API route
+          console.log("🔑 Trying to get token from server API...");
+          const tokenFromServer = await getAccessTokenFromServer();
+
+          console.log(
+            "🔑 Token from server API:",
+            tokenFromServer ? "EXISTS ✅" : "NULL ❌"
+          );
+
+          // Gunakan token dari server, fallback ke session token
+          const accessToken = tokenFromServer || session.accessToken;
+
+          if (!accessToken) {
+            console.error("❌ No access token available");
+            setDocuments([]);
+            setIsLoading(false);
+            return;
+          }
+
+          console.log("🔑 Using token:", accessToken.substring(0, 30) + "...");
+          console.log("🌐 API will be called with token");
+          console.log(
+            "🔄 Using PAGINATION system to fetch ALL documents (800 per page)..."
+          );
+          console.log(
+            "✨ Progressive Loading ENABLED - Data akan langsung tampil setiap page!"
+          );
+
+          console.log("🔗 Merging regular + reminder documents...");
+          const combinedDocuments = [...regularDocuments, ...reminderDocuments];
+          const apiDocuments = deduplicateDocuments(combinedDocuments);
+          
+          console.log("📊 Merge Summary:");
+          console.log(`   - Regular documents: ${regularDocuments.length}`);
+          console.log(`   - Reminder documents: ${reminderDocuments.length}`);
+          console.log(`   - Combined (before dedup): ${combinedDocuments.length}`);
+          console.log(`   - Final (after dedup): ${apiDocuments.length}`);
+
+          // 🔥 FIX: Cek jika component sudah unmounted
+          if (!isMountedRef.current) {
+            console.log("⚠️ Component unmounted during fetch, aborting...");
+            isFetchingDocuments = false;
+            return;
+          }
+
+          console.log(`📊 Documents Summary:`);
+          console.log(`   - Total documents fetched: ${apiDocuments.length}`);
+
+          // 🔥 FIX: Simpan ke cache
+          documentsCache = apiDocuments;
+
+          // 🔍 DEBUG: Cek berapa dokumen yang punya expireDate
+          const docsWithExpireDate = apiDocuments.filter(
+            (d) => d.expireDate && d.expireDate !== ""
+          );
+          const docsExpired = apiDocuments.filter((d) => d.documentExpired);
+          const docsExpiringSoon = apiDocuments.filter(
+            (d) =>
+              !d.documentExpired &&
+              d.daysUntilExpire !== null &&
+              d.daysUntilExpire !== undefined &&
+              d.daysUntilExpire <= 30 &&
+              d.daysUntilExpire >= 0
+          );
+
+          console.log(
+            "   - Documents with expireDate:",
+            docsWithExpireDate.length,
+            `(${(
+              (docsWithExpireDate.length / apiDocuments.length) *
+              100
+            ).toFixed(1)}%)`
+          );
+          console.log("   - Documents expired:", docsExpired.length);
+          console.log(
+            "   - Documents expiring soon (<=30 days):",
+            docsExpiringSoon.length
+          );
+
+          if (docsWithExpireDate.length > 0) {
+            console.log("   - ✅ Sample docs with expire:");
+            docsWithExpireDate.slice(0, 3).forEach((doc, idx) => {
+              console.log(
+                `      ${idx + 1}. "${doc.title?.substring(0, 40)}" → Expire: ${
+                  doc.expireDate
+                }, Expired: ${doc.documentExpired}, Days: ${
+                  doc.daysUntilExpire
+                }`
+              );
+            });
+          } else {
+            console.warn("   ⚠️⚠️⚠️ NO DOCUMENTS HAVE EXPIRE DATE! ⚠️⚠️⚠️");
+            console.warn(
+              "   This means API didn't return document_expire_date field"
+            );
+            console.warn("   OR all documents have NULL/empty expire dates");
+            console.warn("   Sample document structure:");
+            if (apiDocuments.length > 0) {
+              console.log("   Fields:", Object.keys(apiDocuments[0]));
+            }
+          }
+
+          // 🔥 Progressive loading sudah update UI setiap page
+          // Di sini hanya perlu save final state ke localStorage (SEKALI SAJA!)
+          const currentDocs = documents.length > 0 ? documents : apiDocuments;
+
+          // 🔥 FIX: Save to localStorage dengan error handling untuk quota exceeded
+          try {
+            // Simpan hanya essential data untuk mengurangi size
+            const essentialDocs = currentDocs.map((doc) => ({
+              id: doc.id,
+              isStarred: doc.isStarred,
+              lastAccessed: doc.lastAccessed,
+            }));
+
+            // Save essential data saja (lebih kecil)
+            localStorage.setItem(
+              SIADIL_DOCUMENTS_KEY,
+              JSON.stringify(essentialDocs)
+            );
+            localStorage.setItem(SIADIL_DOCUMENTS_FETCHED_KEY, "true");
+            console.log(
+              `💾 Saved ${essentialDocs.length} documents metadata to localStorage`
+            );
+          } catch {
+            // 🔥 Handle localStorage quota exceeded
+            console.warn(
+              "⚠️ Failed to save to localStorage (quota exceeded or full)"
+            );
+            console.warn("   Data will be fetched from API on next load");
+
+            // Try to clear old data and save again
+            try {
+              console.log("🧹 Clearing old localStorage data...");
+              localStorage.removeItem(SIADIL_DOCUMENTS_KEY);
+              localStorage.removeItem(SIADIL_DOCUMENTS_FETCHED_KEY);
+
+              // Try minimal save
+              const minimalDocs = currentDocs.map((doc) => ({
+                id: doc.id,
+                isStarred: doc.isStarred || false,
+              }));
+              localStorage.setItem(
+                SIADIL_DOCUMENTS_KEY,
+                JSON.stringify(minimalDocs)
+              );
+              console.log("✅ Saved minimal documents metadata after cleanup");
+            } catch {
+              console.warn("❌ Still cannot save to localStorage, skipping...");
+              // Tidak masalah, data tetap ada di memory (documents state)
+            }
+          }
+
+          console.log(
+            `✅ ALL Documents loaded complete! Total: ${apiDocuments.length} items`
+          );
+          console.log(`✨ UI updated progressively during loading`);
+
+          // 🔥 FIX: Mark as fetched dan reset flag
+          hasFetchedRef.current = true;
+          isFetchingDocuments = false;
+          setIsLoading(false);
+        } else {
+          console.log("⏳ No session yet, waiting for login...");
+          console.log("   - Documents will be loaded after login");
+          setDocuments([]);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("❌ Error loading documents:", error);
+        if (error instanceof Error) {
+          console.error("   - Error message:", error.message);
+          console.error("   - Error stack:", error.stack);
+          setError(error);
+        } else {
+          setError(new Error("Unknown error occurred"));
+        }
+        console.log("⚠️ Documents cannot be loaded - API error");
+
+        // 🔥 FIX: Reset flags on error
+        isFetchingDocuments = false;
+        hasFetchedRef.current = false;
+        documentsCache = null;
+
+        setDocuments([]);
+        setIsLoading(false);
+      }
+    }
+
+    loadDocuments();
+
+    // 🔥 FIX: Cleanup function
+    return () => {
+      console.log("🧹 usePersistentDocuments - Cleanup");
+      isMountedRef.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]); // Only run when session changes
+
+  // 🔥 OPTIMIZED: Save only essential user data (isStarred, lastAccessed) to localStorage
+  // Tidak save full documents untuk avoid quota exceeded
+  useEffect(() => {
+    if (!isLoading && documents.length > 0) {
+      try {
+        // Simpan hanya data yang dimodifikasi user (isStarred, lastAccessed)
+        const essentialData = documents
+          .filter((doc) => doc.isStarred || doc.lastAccessed) // Hanya doc yang ada user interaction
+          .map((doc) => ({
+            id: doc.id,
+            isStarred: doc.isStarred,
+            lastAccessed: doc.lastAccessed,
+          }));
+
+        if (essentialData.length > 0) {
+          localStorage.setItem(
+            SIADIL_DOCUMENTS_KEY,
+            JSON.stringify(essentialData)
+          );
+          console.log(
+            `💾 Saved ${essentialData.length} user interactions to localStorage`
+          );
+        }
+      } catch {
+        console.warn("⚠️ Failed to save user interactions to localStorage");
+        // Tidak masalah, data tetap ada di memory
+      }
+    }
+  }, [documents, isLoading]);
+
+  return [documents, setDocuments, { isLoading, error, loadingProgress }];
+}

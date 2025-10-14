@@ -14,13 +14,22 @@ export const useSelection = (
   );
 
   const handleDocumentSelect = (docId: string, event?: React.MouseEvent) => {
-    setDocuments((prevDocs) =>
-      prevDocs.map((doc) =>
-        doc.id === docId
-          ? { ...doc, lastAccessed: new Date().toISOString() }
-          : doc
-      )
-    );
+    const timestamp = new Date().toISOString();
+    console.log("🔍 [useSelection] Document selected:", docId, "at", timestamp);
+
+    setDocuments((prevDocs) => {
+      const updated = prevDocs.map((doc) =>
+        doc.id === docId ? { ...doc, lastAccessed: timestamp } : doc
+      );
+
+      const withLastAccessed = updated.filter((d) => d.lastAccessed);
+      console.log(
+        "📝 [useSelection] Total docs with lastAccessed:",
+        withLastAccessed.length
+      );
+
+      return updated;
+    });
 
     const newSelection = new Set(selectedDocumentIds);
     const isRightClick = event?.type === "contextmenu";

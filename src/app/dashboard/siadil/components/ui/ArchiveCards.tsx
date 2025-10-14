@@ -32,8 +32,13 @@ const PersonalArchiveCard = ({
   return (
     <div
       onClick={onClick}
-      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl bg-gradient-to-br from-demplon to-teal-600 p-5 text-white shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1"
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl bg-gradient-to-br from-demplon to-teal-600 p-5 text-white shadow-lg transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-teal-600/40 hover:-translate-y-1 hover:scale-[1.02] hover:from-teal-600 hover:to-emerald-600 h-[156px]"
     >
+      {/* Shimmer effect on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+      </div>
+
       <div className="absolute top-0 left-0 h-full w-full opacity-10">
         <svg
           className="h-full w-full"
@@ -47,26 +52,29 @@ const PersonalArchiveCard = ({
         </svg>
       </div>
 
-      <div className="relative z-10 flex flex-grow flex-col">
+      <div className="relative z-10 flex flex-col justify-between h-full">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-2 ring-white/50 overflow-hidden">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-2 ring-white/50 overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:ring-4 group-hover:ring-white/70 group-hover:shadow-lg group-hover:shadow-white/30">
             {userPhoto && !imageError ? (
               <Image
                 src={userPhoto}
                 alt={userName || "User"}
                 width={48}
                 height={48}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <span className="text-xl font-bold tracking-wide text-white">
+              <span className="text-xl font-bold tracking-wide text-white transition-transform duration-300 group-hover:scale-110">
                 {getInitials(userName)}
               </span>
             )}
           </div>
-          <div className="min-w-0">
-            <h3 className="text-base font-bold text-white" title={archive.name}>
+          <div className="min-w-0 flex-1">
+            <h3
+              className="text-base font-bold text-white line-clamp-1"
+              title={userName || archive.name}
+            >
               {archive.name}
             </h3>
             <p className="mt-1 text-sm font-medium text-green-100">
@@ -74,8 +82,8 @@ const PersonalArchiveCard = ({
             </p>
           </div>
         </div>
-        <div className="mt-4 flex-grow"></div>
-        <span className="mt-2 self-start rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+
+        <span className="self-start rounded-full bg-white/20 px-3 py-1 text-xs font-semibold transition-all duration-300 group-hover:bg-white/30 group-hover:scale-105 group-hover:shadow-lg">
           Personal
         </span>
       </div>
@@ -106,13 +114,14 @@ const ArchiveCard = ({
   return (
     <div
       onClick={onClick}
-      className="group relative flex cursor-pointer flex-col items-start overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5 dark:border-gray-700 dark:bg-gray-900/50"
+      className="group relative flex cursor-pointer flex-col items-start overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 ease-in-out hover:shadow-xl hover:shadow-teal-500/20 hover:border-teal-300 hover:-translate-y-1 hover:scale-[1.02] dark:border-gray-700 dark:bg-gray-900/50 dark:hover:border-teal-600 dark:hover:shadow-teal-500/30 h-[156px]"
     >
       {/* Three dots menu button - always visible */}
       {onMenuClick && (
         <button
           onClick={handleMenuClick}
           className="absolute top-2 right-2 z-10 flex items-center justify-center w-6 h-6 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+          aria-label="Menu"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
@@ -120,10 +129,10 @@ const ArchiveCard = ({
         </button>
       )}
 
-      {/* Icon - Smaller and more compact */}
-      <div className="mb-2.5 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 shadow-sm transition-transform duration-200 group-hover:scale-105">
+      {/* Icon - Smaller and more compact with modern glow effect */}
+      <div className="mb-2.5 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-teal-500/50 group-hover:rotate-3">
         <svg
-          className="w-6 h-6 text-white"
+          className="w-6 h-6 text-white transition-transform duration-300 group-hover:scale-110"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -137,18 +146,15 @@ const ArchiveCard = ({
         </svg>
       </div>
 
-      {/* Content wrapper untuk memastikan alignment */}
-      <div className="flex flex-col flex-1 w-full min-h-[3rem]">
-        {/* Title - Lebih besar dan ada spacing */}
-        <h3
-          className="text-base font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 w-full leading-snug"
-          title={archive.name}
-        >
+      {/* Content wrapper - Fixed height untuk alignment */}
+      <div className="flex flex-col flex-1 w-full justify-between">
+        {/* Title - Maksimal 2 baris */}
+        <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-2 w-full leading-tight pr-6">
           {archive.name}
         </h3>
 
-        {/* Item count - Fixed position di bawah */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-auto">
+        {/* Item count - Fixed position di bawah, sejajar */}
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           {docCount} item{docCount !== 1 ? "s" : ""}
         </p>
       </div>

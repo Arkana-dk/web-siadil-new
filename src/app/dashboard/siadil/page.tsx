@@ -19,6 +19,7 @@ import { useDocumentPagination } from "./hooks/useDocumentPagination";
 import { useDocumentFilters } from "./hooks/useDocumentFilters";
 import { useSelection } from "./hooks/useSelection";
 import { useModals } from "./hooks/useModals";
+import { useScrollPosition } from "./hooks/useScrollPosition";
 import TrashView from "./components/views/TrashView";
 import ManageContributorsModal from "./components/modals/ManageContributorsModal";
 
@@ -47,6 +48,7 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "./components/modals/ConfirmationModal";
 import DashboardHeader from "./components/container/DashboardHeader";
 import { AllHistoryModal } from "./components/modals/AllHistoryModal";
+import { APIDebugPanel } from "./components/ui/APIDebugPanel";
 
 type ReminderTab = "all" | "error" | "warning";
 
@@ -72,11 +74,40 @@ const initialNewDocument: NewDocumentData = {
 
 export default function SiadilPage() {
   const { data: session } = useSession();
-  const [currentFolderId, setCurrentFolderId] = useState("root");
+  const [_currentFolderId, _setCurrentFolderId] = useState("root");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [pageView, setPageView] = useState<"archives" | "starred" | "trash">(
     "archives"
   );
+
+  // Hook untuk scroll position persistence
+  const { saveScrollPosition, restoreScrollPosition } =
+    useScrollPosition(_currentFolderId);
+
+  // Wrapper untuk setCurrentFolderId yang menyimpan scroll position
+  const setCurrentFolderId = (
+    newFolderId: string | ((prev: string) => string)
+  ) => {
+    // Handle callback function
+    const resolvedNewFolderId =
+      typeof newFolderId === "function"
+        ? newFolderId(_currentFolderId)
+        : newFolderId;
+
+    // Simpan posisi scroll folder saat ini
+    saveScrollPosition(_currentFolderId);
+
+    // Update folder ID
+    _setCurrentFolderId(resolvedNewFolderId);
+
+    // Restore posisi scroll folder baru setelah render
+    setTimeout(() => {
+      restoreScrollPosition(resolvedNewFolderId);
+    }, 100);
+  };
+
+  // Expose sebagai currentFolderId untuk digunakan di seluruh komponen
+  const currentFolderId = _currentFolderId;
 
   // Log session data untuk debugging
   console.log("Session Data:", session);
@@ -149,6 +180,8 @@ export default function SiadilPage() {
     setDocuments,
     archives,
     setArchives,
+    archivesState, // { isLoading, error }
+    documentsState, // { isLoading, error }
     searchableDocuments,
     documentsForFiltering,
     breadcrumbItems,
@@ -169,54 +202,168 @@ export default function SiadilPage() {
   }, [documents, currentFolderId, searchableDocuments]);
 
   const { dynamicReminders, expiredCount, expiringSoonCount } = useMemo(() => {
-    // Gunakan dokumen sesuai scope folder untuk reminder DAN count
     const baseDocs =
       currentFolderId === "root" ? documents : searchableDocuments;
 
     const reminders: Reminder[] = [];
     let expired = 0;
     let expiringSoon = 0;
-    const now = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const archiveNameById = new Map(archives.map((arc) => [arc.id, arc.name]));
+    const archiveNameByCode = new Map(
+      archives.map((arc) => [arc.code, arc.name])
+    );
 
     baseDocs.forEach((doc) => {
-      if (!doc.expireDate || doc.status === "Trashed") return;
-      const expireDate = new Date(doc.expireDate);
-      const diffTime = expireDate.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (doc.status === "Trashed") return;
 
-      if (expireDate < now) {
-        expired++;
-        reminders.push({
-          id: doc.id,
-          documentId: doc.id,
-          title: doc.title,
-          description: `Dokumen di arsip ${doc.archive}`,
-          message: `Telah kedaluwarsa ${Math.abs(diffDays)} hari yang lalu.`,
-          type: "error",
-          expireDate: doc.expireDate,
-        });
-      } else if (expireDate <= thirtyDaysFromNow) {
-        expiringSoon++;
-        reminders.push({
-          id: doc.id,
-          documentId: doc.id,
-          title: doc.title,
-          description: `Dokumen di arsip ${doc.archive}`,
-          message: `Akan kedaluwarsa dalam ${diffDays} hari.`,
-          type: "warning",
-          expireDate: doc.expireDate,
-        });
+      const archiveLabel =
+        doc.archiveName ||
+        archiveNameById.get(doc.parentId) ||
+        (doc.archive ? archiveNameByCode.get(doc.archive) : undefined) ||
+        doc.archive ||
+        "Unknown";
+
+      const expireDate = doc.expireDate ? new Date(doc.expireDate) : null;
+      const hasValidExpireDate =
+        expireDate !== null && !Number.isNaN(expireDate.getTime());
+
+      let daysUntilExpire: number | null =
+        typeof doc.daysUntilExpire === "number" ? doc.daysUntilExpire : null;
+      if (daysUntilExpire === null && hasValidExpireDate) {
+        const diffMs = expireDate!.getTime() - startOfToday.getTime();
+        daysUntilExpire = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
       }
+
+      const isExpired =
+        doc.documentExpired ||
+        (hasValidExpireDate
+          ? expireDate!.getTime() < startOfToday.getTime()
+          : false);
+      const isExpiringSoon =
+        !isExpired && daysUntilExpire !== null && daysUntilExpire <= 30;
+
+      // Hitung HANYA dokumen yang benar-benar expired atau expiring soon
+      if (isExpired) {
+        expired++;
+      }
+      if (isExpiringSoon) {
+        expiringSoon++;
+      }
+
+      // Surface reminder hanya untuk dokumen yang:
+      // 1. Sudah expired, atau
+      // 2. Akan expire dalam 30 hari, atau
+      // 3. Punya reminderActive dari API (tapi tetap cek apakah relevan)
+      const shouldSurfaceReminder = isExpired || isExpiringSoon;
+
+      if (!shouldSurfaceReminder) return;
+
+      let type: Reminder["type"] = "warning";
+      if (doc.reminderType === "error" || isExpired) {
+        type = "error";
+      } else if (doc.reminderType === "warning") {
+        type = "warning";
+      }
+
+      let message = doc.reminderMessage || undefined;
+      if (!message) {
+        if (isExpired) {
+          const overdueDays =
+            daysUntilExpire !== null ? Math.abs(daysUntilExpire) : undefined;
+          if (overdueDays !== undefined && overdueDays > 0) {
+            message = `Telah kedaluwarsa ${overdueDays} hari yang lalu.`;
+          } else {
+            message = "Dokumen telah melewati tanggal kedaluwarsa.";
+          }
+        } else if (isExpiringSoon && daysUntilExpire !== null) {
+          if (daysUntilExpire === 0) {
+            message = "Akan kedaluwarsa hari ini.";
+          } else {
+            message = `Akan kedaluwarsa dalam ${daysUntilExpire} hari.`;
+          }
+        }
+      }
+
+      if (!message) {
+        message =
+          type === "error"
+            ? "Reminder aktif: dokumen butuh perhatian."
+            : "Reminder aktif: dokumen mendekati kedaluwarsa.";
+      }
+
+      reminders.push({
+        id: doc.id,
+        documentId: doc.id,
+        title: doc.title,
+        description: `Dokumen di arsip ${archiveLabel}`,
+        message,
+        type,
+        expireDate: doc.expireDate || undefined,
+      });
     });
+
+    // 🔍 DEBUG: Log reminder summary dengan detail expire dates
+    const docsWithExpireDate = baseDocs.filter(
+      (d) => d.expireDate && d.expireDate !== "" && d.status !== "Trashed"
+    );
+    const docsExpired = baseDocs.filter(
+      (d) => d.documentExpired && d.status !== "Trashed"
+    );
+    const docsExpiringSoon = baseDocs.filter(
+      (d) =>
+        !d.documentExpired &&
+        d.daysUntilExpire !== null &&
+        d.daysUntilExpire !== undefined &&
+        d.daysUntilExpire <= 30 &&
+        d.daysUntilExpire >= 0 &&
+        d.status !== "Trashed"
+    );
+
+    console.log("🔔 Reminders Summary:");
+    console.log("   - Total base documents:", baseDocs.length);
+    console.log("   - Documents with expireDate:", docsWithExpireDate.length);
+    console.log("   - Documents expired (from API):", docsExpired.length);
+    console.log(
+      "   - Documents expiring soon (calculated):",
+      docsExpiringSoon.length
+    );
+    console.log("   - Expired count (final):", expired);
+    console.log("   - Expiring soon count (final):", expiringSoon);
+    console.log("   - Total reminders:", reminders.length);
+    console.log(
+      "   - Expired reminders:",
+      reminders.filter((r) => r.type === "error").length
+    );
+    console.log(
+      "   - Warning reminders:",
+      reminders.filter((r) => r.type === "warning").length
+    );
+
+    // 🔥 Sample expired/expiring documents
+    if (docsWithExpireDate.length > 0) {
+      console.log("   - Sample docs with expireDate:");
+      docsWithExpireDate.slice(0, 5).forEach((doc, idx) => {
+        console.log(
+          `      ${idx + 1}. "${doc.title?.substring(0, 40)}" → Expire: ${
+            doc.expireDate
+          }, Expired: ${doc.documentExpired}, Days: ${doc.daysUntilExpire}`
+        );
+      });
+    } else {
+      console.warn("   ⚠️ NO DOCUMENTS HAVE EXPIRE DATE!");
+      console.warn("   ⚠️ This is why reminders are empty!");
+    }
 
     return {
       dynamicReminders: reminders,
       expiredCount: expired,
       expiringSoonCount: expiringSoon,
     };
-  }, [documents, searchableDocuments, currentFolderId]);
+  }, [archives, documents, searchableDocuments, currentFolderId]);
 
   // Memo untuk semua dokumen riwayat
   const allHistoryDocuments = useMemo(() => {
@@ -577,15 +724,106 @@ export default function SiadilPage() {
 
   const handleSaveDocument = () => {
     if (editingDocId) {
+      const archiveRecord =
+        archives.find((a) => a.id === currentFolderId) ||
+        archives.find((a) => a.code === newDocument.archive);
+
+      const normalizedDocumentDate =
+        newDocument.documentDate || new Date().toISOString().split("T")[0];
+      const normalizedExpireDate = newDocument.expireDate || "";
+
+      let daysUntilExpire: number | null = null;
+      let documentExpired = false;
+      let expireStatus: Document["expireStatus"] = "noExpire";
+
+      if (normalizedExpireDate) {
+        const expireDateObj = new Date(normalizedExpireDate);
+        if (!Number.isNaN(expireDateObj.getTime())) {
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const diffMs = expireDateObj.getTime() - todayStart.getTime();
+          daysUntilExpire = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          documentExpired = daysUntilExpire < 0;
+          expireStatus = documentExpired
+            ? "expired"
+            : daysUntilExpire <= 30
+            ? "expiringSoon"
+            : "active";
+        }
+      }
+
+      let status = "Active";
+      if (documentExpired) {
+        status = "Expired";
+      } else if (expireStatus === "expiringSoon") {
+        status = "Expiring Soon";
+      }
+
+      const hasDerivedReminder =
+        expireStatus === "expired" || expireStatus === "expiringSoon";
+      const derivedReminderType = hasDerivedReminder
+        ? expireStatus === "expired"
+          ? "error"
+          : "warning"
+        : undefined;
+      let derivedReminderMessage: string | null = null;
+      if (hasDerivedReminder) {
+        if (expireStatus === "expired") {
+          derivedReminderMessage =
+            "Dokumen telah melewati tanggal kedaluwarsa.";
+        } else if (expireStatus === "expiringSoon") {
+          if (daysUntilExpire === 0) {
+            derivedReminderMessage = "Akan kedaluwarsa hari ini.";
+          } else if (daysUntilExpire !== null) {
+            derivedReminderMessage = `Dokumen akan kedaluwarsa dalam ${daysUntilExpire} hari.`;
+          }
+        }
+      }
+
       setDocuments((docs) =>
         docs.map((doc) =>
           doc.id === editingDocId
-            ? {
-                ...doc,
-                ...newDocument,
-                id: editingDocId,
-                updatedDate: new Date().toISOString(),
-              }
+            ? (() => {
+                const usesApiReminder = doc.reminderSource === "api";
+                const nextReminderSource = usesApiReminder
+                  ? "api"
+                  : hasDerivedReminder
+                  ? "derived"
+                  : undefined;
+                const nextReminderActive = usesApiReminder
+                  ? doc.reminderActive
+                  : hasDerivedReminder;
+                const nextReminderType = usesApiReminder
+                  ? doc.reminderType
+                  : derivedReminderType;
+                const nextReminderMessage = usesApiReminder
+                  ? doc.reminderMessage
+                  : derivedReminderMessage;
+
+                return {
+                  ...doc,
+                  number: newDocument.number,
+                  title:
+                    newDocument.title ||
+                    doc.title ||
+                    newDocument.file?.name ||
+                    doc.title,
+                  description: newDocument.description,
+                  documentDate: normalizedDocumentDate,
+                  archive: newDocument.archive,
+                  archiveName: archiveRecord?.name || doc.archiveName,
+                  expireDate: normalizedExpireDate,
+                  status,
+                  documentExpired,
+                  daysUntilExpire,
+                  expireStatus,
+                  reminderSource: nextReminderSource,
+                  reminderActive: nextReminderActive,
+                  reminderType: nextReminderType,
+                  reminderMessage: nextReminderMessage,
+                  updatedDate: new Date().toISOString(),
+                };
+              })()
             : doc
         )
       );
@@ -611,6 +849,77 @@ export default function SiadilPage() {
       const fileName = newDocument.file.name;
       const fileExtension = fileName.split(".").pop()?.toLowerCase();
 
+      const archiveRecord =
+        archives.find((a) => a.id === currentFolderId) ||
+        archives.find((a) => a.code === newDocument.archive);
+
+      const normalizedDocumentDate =
+        newDocument.documentDate || new Date().toISOString().split("T")[0];
+      const normalizedExpireDate = newDocument.expireDate || "";
+
+      let daysUntilExpire: number | null = null;
+      let documentExpired = false;
+      let expireStatus: Document["expireStatus"] = "noExpire";
+
+      if (normalizedExpireDate) {
+        const expireDateObj = new Date(normalizedExpireDate);
+        if (!Number.isNaN(expireDateObj.getTime())) {
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const diffMs = expireDateObj.getTime() - todayStart.getTime();
+          daysUntilExpire = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          documentExpired = daysUntilExpire < 0;
+          expireStatus = documentExpired
+            ? "expired"
+            : daysUntilExpire <= 30
+            ? "expiringSoon"
+            : "active";
+        }
+      }
+
+      let status = "Active";
+      if (documentExpired) {
+        status = "Expired";
+      } else if (expireStatus === "expiringSoon") {
+        status = "Expiring Soon";
+      }
+
+      // Calculate derived reminder
+      const {
+        hasDerivedReminder,
+        derivedReminderType,
+        derivedReminderMessage,
+      } = (() => {
+        if (!normalizedExpireDate || daysUntilExpire === null) {
+          return {
+            hasDerivedReminder: false,
+            derivedReminderType: "info" as const,
+            derivedReminderMessage: null,
+          };
+        }
+        if (documentExpired) {
+          return {
+            hasDerivedReminder: true,
+            derivedReminderType: "error" as const,
+            derivedReminderMessage: `Document expired ${Math.abs(
+              daysUntilExpire
+            )} days ago`,
+          };
+        }
+        if (daysUntilExpire <= 30) {
+          return {
+            hasDerivedReminder: true,
+            derivedReminderType: "warning" as const,
+            derivedReminderMessage: `Document expires in ${daysUntilExpire} days`,
+          };
+        }
+        return {
+          hasDerivedReminder: false,
+          derivedReminderType: "info" as const,
+          derivedReminderMessage: null,
+        };
+      })();
+
       const newDoc: Document = {
         id: getNextId(),
         parentId: currentFolderId,
@@ -618,21 +927,35 @@ export default function SiadilPage() {
         fileType: fileExtension,
         number: newDocument.number,
         description: newDocument.description,
-        documentDate:
-          newDocument.documentDate || new Date().toISOString().split("T")[0],
+        documentDate: normalizedDocumentDate,
         archive: newDocument.archive,
-        expireDate: newDocument.expireDate,
+        archiveName: archiveRecord?.name,
+        expireDate: normalizedExpireDate,
         contributors: [
           {
             name: session?.user?.name || "Guest",
             role: "Uploader",
           },
         ],
-        status: "Active",
+        status,
         createdBy: session?.user?.username || session?.user?.id || "000000",
         updatedBy: session?.user?.username || session?.user?.id || "000000",
         createdDate: new Date().toISOString(),
         updatedDate: new Date().toISOString(),
+        notification: false,
+        completion: false,
+        isStarred: false,
+        documentExpired,
+        reminderActive: hasDerivedReminder,
+        reminderType: derivedReminderType,
+        reminderInfo: false,
+        reminderObject: false,
+        reminderLink: false,
+        reminderSource: hasDerivedReminder ? "derived" : undefined,
+        reminderMessage: derivedReminderMessage,
+        daysUntilExpire,
+        expireStatus,
+        filesCount: newDocument.file ? 1 : 0,
       };
       setDocuments((docs) => [...docs, newDoc]);
 
@@ -660,11 +983,11 @@ export default function SiadilPage() {
         "Tanggal Dokumen": new Date(doc.documentDate).toLocaleDateString(
           "id-ID"
         ),
-        Arsip: doc.archive,
+        Arsip: doc.archiveName || doc.archive,
         Status: doc.status,
-        "Tanggal Kedaluwarsa": new Date(doc.expireDate).toLocaleDateString(
-          "id-ID"
-        ),
+        "Tanggal Kedaluwarsa": doc.expireDate
+          ? new Date(doc.expireDate).toLocaleDateString("id-ID")
+          : "-",
         "Dibuat Oleh": doc.createdBy,
         "Tanggal Dibuat": new Date(doc.createdDate).toLocaleString("id-ID"),
         "Diubah Oleh": doc.updatedBy,
@@ -746,6 +1069,30 @@ export default function SiadilPage() {
   };
 
   const handleQuickAccessClick = (doc: Document) => {
+    // 🔥 CRITICAL: Update lastAccessed when document is opened
+    const timestamp = new Date().toISOString();
+    console.log(
+      "🔍 [Quick Access] Document clicked:",
+      doc.id,
+      doc.title,
+      "at",
+      timestamp
+    );
+
+    setDocuments((currentDocs) => {
+      const updated = currentDocs.map((d) =>
+        d.id === doc.id ? { ...d, lastAccessed: timestamp } : d
+      );
+
+      const withLastAccessed = updated.filter((d) => d.lastAccessed);
+      console.log(
+        "📝 [Quick Access] Updated documents. Total with lastAccessed:",
+        withLastAccessed.length
+      );
+
+      return updated;
+    });
+
     const docsInTargetFolder = documents.filter(
       (d) => d.parentId === doc.parentId
     );
@@ -886,6 +1233,7 @@ export default function SiadilPage() {
           {currentFolderId === "root" && (
             <QuickAccessSection
               documents={quickAccessDocuments}
+              archives={archives}
               onDocumentClick={handleQuickAccessClick}
               isInfoPanelOpen={isInfoPanelOpen}
               onViewAll={() => setIsViewAllQAOpen(true)}
@@ -1114,6 +1462,40 @@ export default function SiadilPage() {
                   );
                 case "archives":
                 default:
+                  // Tampilkan error jika ada, otherwise tampilkan archives
+                  if (archivesState.error) {
+                    return (
+                      <div className="space-y-4">
+                        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-6">
+                          <div className="flex items-start space-x-4">
+                            <div className="text-4xl flex-shrink-0">⚠️</div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Failed to Load Archives from API
+                              </h3>
+                              <div className="bg-white dark:bg-gray-800 rounded-md p-3 mb-3">
+                                <p className="text-xs font-mono text-red-600 dark:text-red-400">
+                                  {archivesState.error.message}
+                                </p>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                                The system is ready to receive data from the
+                                Demplon API. Please ensure the API is properly
+                                configured and authorized.
+                              </p>
+                              <button
+                                onClick={() => window.location.reload()}
+                                className="px-4 py-2 bg-demplon text-white rounded-md hover:bg-teal-700 transition-colors text-sm font-medium"
+                              >
+                                🔄 Retry
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <ArchiveView
                       archives={archives.filter((a) => a.parentId === "root")}
@@ -1128,6 +1510,36 @@ export default function SiadilPage() {
                   );
               }
             })()
+          ) : documentsState.error ? (
+            // Show documents error if failed to load
+            <div className="space-y-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="text-4xl flex-shrink-0">⚠️</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Failed to Load Documents from API
+                    </h3>
+                    <div className="bg-white dark:bg-gray-800 rounded-md p-3 mb-3">
+                      <p className="text-xs font-mono text-red-600 dark:text-red-400">
+                        {documentsState.error.message}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                      The system is ready to receive documents from the Demplon
+                      API. Please ensure the API is properly configured and
+                      authorized.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-demplon text-white rounded-md hover:bg-teal-700 transition-colors text-sm font-medium"
+                    >
+                      🔄 Retry
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <DocumentView
               archives={subfolderArchives}
@@ -1213,6 +1625,7 @@ export default function SiadilPage() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           documents={searchableDocuments}
+          archives={archives}
           onDocumentSelect={handleSearchSelect}
         />
       )}
@@ -1317,6 +1730,9 @@ export default function SiadilPage() {
         documentsCount={trashedDocuments.length}
         foldersCount={trashedArchives.length}
       />
+
+      {/* Debug Panel - Remove this in production */}
+      {process.env.NODE_ENV === "development" && <APIDebugPanel />}
     </>
   );
 }

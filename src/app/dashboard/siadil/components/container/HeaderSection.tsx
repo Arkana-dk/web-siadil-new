@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { Reminder } from "../../types";
 import { AddNewMenu } from "../ui/AddNewMenu";
+import { removeDuplicateReminders } from "@/lib/filterDuplicates";
 
 interface HeaderSectionProps {
   totalDocuments: number;
@@ -122,6 +129,11 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 🔥 Filter duplicate reminders by documentId
+  const uniqueReminders = useMemo(() => {
+    return removeDuplicateReminders(reminders, "documentId");
+  }, [reminders]);
+
   const startInterval = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
@@ -129,25 +141,25 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({
       setTimeout(() => {
         setCurrentReminderIndex((prev) => {
           const nextIndex = prev + 3;
-          return nextIndex >= reminders.length ? 0 : nextIndex;
+          return nextIndex >= uniqueReminders.length ? 0 : nextIndex;
         });
         setTimeout(() => {
           setIsTransitioning(false);
         }, 50);
       }, 500);
     }, 7000);
-  }, [reminders.length]);
+  }, [uniqueReminders.length]);
 
   const stopInterval = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
   useEffect(() => {
-    if (reminders.length > 3) {
+    if (uniqueReminders.length > 3) {
       startInterval();
     }
     return () => stopInterval();
-  }, [reminders.length, startInterval, stopInterval]);
+  }, [uniqueReminders.length, startInterval, stopInterval]);
   const getReminderStyles = (type: "error" | "warning" | undefined) => {
     switch (type) {
       case "error":
@@ -393,7 +405,7 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({
           onMouseEnter={stopInterval}
           onMouseLeave={startInterval}
         >
-          {reminders.length === 0 ? (
+          {uniqueReminders.length === 0 ? (
             <div className="col-span-3 relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-800 dark:via-gray-800/50 dark:to-gray-800 py-12">
               {/* Decorative background pattern */}
               <div className="absolute inset-0 opacity-5">
@@ -453,7 +465,7 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({
             [0, 1, 2].map((cardIndex) => {
               const reminderIndex = currentReminderIndex + cardIndex;
 
-              if (reminderIndex >= reminders.length) {
+              if (reminderIndex >= uniqueReminders.length) {
                 return (
                   <div
                     key={`placeholder-${cardIndex}`}
@@ -466,7 +478,7 @@ const HeaderSection: React.FC<HeaderSectionProps> = ({
                 );
               }
 
-              const reminder = reminders[reminderIndex];
+              const reminder = uniqueReminders[reminderIndex];
               if (!reminder) {
                 return null;
               }

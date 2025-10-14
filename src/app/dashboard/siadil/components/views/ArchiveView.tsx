@@ -15,8 +15,6 @@ interface ArchiveViewProps {
   userPhoto?: string;
 }
 
-const ITEMS_PER_PAGE = 8;
-
 const ArchiveView: React.FC<ArchiveViewProps> = ({
   archives,
   archiveDocCounts,
@@ -41,12 +39,25 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({
     );
   }, [searchQuery, archives]);
 
-  const paginatedArchives = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredArchives.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredArchives, currentPage]);
+  // Filter hanya company archives (exclude PERSONAL)
+  const companyArchivesFiltered = useMemo(() => {
+    return filteredArchives.filter((a) => a.code !== "PERSONAL");
+  }, [filteredArchives]);
 
-  const totalPages = Math.ceil(filteredArchives.length / ITEMS_PER_PAGE);
+  // 8 cards total = 1 Personal + 7 Company
+  const COMPANY_PER_PAGE = 7; // 7 company cards per page (Personal selalu tampil)
+
+  const paginatedArchives = useMemo(() => {
+    const startIndex = (currentPage - 1) * COMPANY_PER_PAGE;
+    return companyArchivesFiltered.slice(
+      startIndex,
+      startIndex + COMPANY_PER_PAGE
+    );
+  }, [companyArchivesFiltered, currentPage]);
+
+  const totalPages = Math.ceil(
+    companyArchivesFiltered.length / COMPANY_PER_PAGE
+  );
 
   const renderPageNumbers = () => {
     const pageNumbers = [];
@@ -72,30 +83,46 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({
     <div className="mb-10">
       {paginatedArchives.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6">
-          {paginatedArchives.map((archive) =>
-            archive.code === "PERSONAL" ? (
-              <PersonalArchiveCard
-                key={archive.id}
-                archive={archive}
-                onClick={() => onArchiveClick(archive.id)}
-                userName={userName}
-                userId={userId}
-                userPhoto={userPhoto}
-              />
-            ) : (
-              <ArchiveCard
-                key={archive.id}
-                archive={archive}
-                docCount={archiveDocCounts[archive.code] || 0}
-                onClick={() => onArchiveClick(archive.id)}
-                onMenuClick={onArchiveMenuClick}
-              />
-            )
-          )}
+          {/* Personal Card - SELALU di posisi pertama */}
+          <PersonalArchiveCard
+            archive={{
+              id: "personal-user",
+              code: "PERSONAL",
+              name: "Personal",
+              parentId: "root",
+            }}
+            onClick={() => onArchiveClick("personal-user")}
+            userName={userName}
+            userId={userId}
+            userPhoto={userPhoto}
+          />
+
+          {/* Company Archives */}
+          {paginatedArchives.map((archive) => (
+            <ArchiveCard
+              key={archive.id}
+              archive={archive}
+              docCount={archiveDocCounts[archive.code] || 0}
+              onClick={() => onArchiveClick(archive.id)}
+              onMenuClick={onArchiveMenuClick}
+            />
+          ))}
         </div>
       ) : (
-        <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <p className="text-gray-500">No archives found.</p>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6">
+          {/* Personal Card tetap tampil meski archives kosong */}
+          <PersonalArchiveCard
+            archive={{
+              id: "personal-user",
+              code: "PERSONAL",
+              name: "Personal",
+              parentId: "root",
+            }}
+            onClick={() => onArchiveClick("personal-user")}
+            userName={userName}
+            userId={userId}
+            userPhoto={userPhoto}
+          />
         </div>
       )}
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Document } from "../../types";
 import { ActionMenu } from "./ActionMenu";
 import { HeaderSortMenu } from "./HeaderSortMenu";
+import { removeDuplicateDocuments } from "@/lib/filterDuplicates";
 // Right-click context menu removed per request
 
 // Context menu state removed
@@ -77,6 +78,11 @@ export const DocumentTable = ({
   const [activeHeaderMenu, setActiveHeaderMenu] =
     useState<ActiveHeaderMenuState>(null);
   // Removed custom context menu logic
+
+  // 🔥 Filter duplicate documents by ID
+  const uniqueDocuments = useMemo(() => {
+    return removeDuplicateDocuments(documents, "id");
+  }, [documents]);
 
   const handleMenuToggle = (docId: string, buttonEl: HTMLButtonElement) => {
     setActiveActionMenu((prev) =>
@@ -208,7 +214,7 @@ export const DocumentTable = ({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
-            {documents.map((doc) => (
+            {uniqueDocuments.map((doc) => (
               <tr
                 key={doc.id}
                 id={`doc-table-${doc.id}`}
@@ -344,9 +350,18 @@ export const DocumentTable = ({
                 )}
                 {visibleColumns.has("archive") && (
                   <td className="px-4 py-4 whitespace-nowrap text-sm">
-                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                      {doc.archive}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        {doc.archiveName || doc.archive || "Unknown"}
+                      </span>
+                      {doc.archiveName &&
+                        doc.archive &&
+                        doc.archiveName !== doc.archive && (
+                          <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                            Kode: {doc.archive}
+                          </span>
+                        )}
+                    </div>
                   </td>
                 )}
                 {visibleColumns.has("updatedAndCreatedBy") && (

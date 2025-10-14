@@ -35,7 +35,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     (doc) =>
       doc.title.toLowerCase().includes(query.toLowerCase()) ||
       doc.number.toLowerCase().includes(query.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(query.toLowerCase())
+      doc.description?.toLowerCase().includes(query.toLowerCase()) ||
+      doc.archiveName?.toLowerCase().includes(query.toLowerCase())
   );
 
   const totalResults = filteredArchives.length + filteredDocuments.length;
@@ -116,9 +117,21 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     }
   };
 
-  const getArchiveName = (parentId: string) => {
-    const archive = archives.find((a) => a.id === parentId);
-    return archive?.name || "Unknown";
+  const getArchiveName = (doc: Document) => {
+    if (doc.archiveName) {
+      return doc.archiveName;
+    }
+    const byId = archives.find((a) => a.id === doc.parentId);
+    if (byId) {
+      return byId.name;
+    }
+    if (doc.archive) {
+      const byCode = archives.find((a) => a.code === doc.archive);
+      if (byCode) {
+        return byCode.name;
+      }
+    }
+    return doc.archive || "Unknown";
   };
 
   return (
@@ -314,7 +327,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                                     {doc.number}
                                   </span>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    in {getArchiveName(doc.parentId)}
+                                    in {getArchiveName(doc)}
                                   </span>
                                 </div>
                               </div>
