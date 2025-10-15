@@ -24,10 +24,14 @@ export const useDocumentPagination = (
     currentPage: documentCurrentPage,
   };
 
+  // Generate unique key untuk trigger animation saat page change
+  const paginationKey = `page-${documentCurrentPage}-${rowsPerPage}`;
+
   return {
     rowsPerPage,
     handleRowsPerPageChange,
     paginatedDocuments,
     pagination,
+    paginationKey,
   };
 };

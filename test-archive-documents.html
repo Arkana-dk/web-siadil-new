@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Documents by Archive ID</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+        }
+        .endpoint {
+            background: #263238;
+            color: #4CAF50;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0;
+            font-size: 32px;
+        }
+        .stat-card p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test: Documents by Archive ID</h1>
+        
+        <div class="test-section">
+            <h2>📋 Test Scenario</h2>
+            <p><strong>Question:</strong> Apakah dengan parameter <code>id_archive[]=9</code> bisa fetch documents dari folder <strong>DAN semua sub-foldernya</strong>?</p>
+            
+            <div class="endpoint">
+GET https://demplon.pupuk-kujang.co.id/admin/api/siadil/documents/
+  ?start=0
+  &length=10
+  &sort[]=id
+  &sortdir[]=DESC
+  &id_archive[]=9
+            </div>
+
+            <div class="input-group">
+                <label for="tokenInput">🔑 Access Token (from cookies or session):</label>
+                <input type="text" id="tokenInput" placeholder="Paste your Bearer token here...">
+                <small style="color: #666;">Get token from: Application → Cookies → next-auth.session-token</small>
+            </div>
+
+            <div class="input-group">
+                <label for="archiveInput">📂 Archive ID to test:</label>
+                <input type="number" id="archiveInput" value="9" placeholder="9">
+            </div>
+
+            <button onclick="testWithArchiveFilterArray()">🚀 Test: id_archive[]=9 (Array)</button>
+            <button onclick="testWithArchiveFilterSingle()">🚀 Test: id_archive=9 (Single)</button>
+            <button onclick="compareFilters()">🔍 Compare Both Formats</button>
+            <button onclick="testWithoutArchiveFilter()">🚀 Test: No Filter (ALL)</button>
+            <button onclick="getArchiveDetails()">📁 Get Archive #9 Details</button>
+            <button onclick="getArchiveTree()">🌲 Get Full Archive Tree</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://demplon.pupuk-kujang.co.id/admin/api';
+        
+        function getToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!token) {
+                alert('❌ Please enter access token first!');
+                return null;
+            }
+            return token;
+        }
+
+        function getArchiveId() {
+            return document.getElementById('archiveInput').value || '9';
+        }
+
+        async function testWithArchiveFilterArray() {
+            const token = getToken();
+            if (!token) return;
+
+            const archiveId = getArchiveId();
+            await testArchiveFilter(archiveId, 'array', token);
+        }
+
+        async function testWithArchiveFilterSingle() {
+            const token = getToken();
+            if (!token) return;
+
+            const archiveId = getArchiveId();
+            await testArchiveFilter(archiveId, 'single', token);
+        }
+
+        async function testArchiveFilter(archiveId, format, token) {
+            const resultsDiv = document.getElementById('results');
+            const formatLabel = format === 'array' ? 'id_archive[]=' : 'id_archive=';
+            resultsDiv.innerHTML = `<p class="info">⏳ Fetching documents with ${formatLabel}${archiveId}...</p>`;
+
+            try {
+                // Build URL based on format
+                const archiveParam = format === 'array' 
+                    ? `id_archive[]=${archiveId}`
+                    : `id_archive=${archiveId}`;
+                
+                const url = `${BASE_URL}/siadil/documents/?start=0&length=10&sort[]=id&sortdir[]=DESC&${archiveParam}`;
+                
+                console.log('🔍 Testing URL:', url);
+                console.log('📋 Format:', format === 'array' ? 'Array (id_archive[])' : 'Single (id_archive)');
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                console.log('📦 Response:', data);
+
+                // Build result HTML
+                const formatDisplay = format === 'array' ? `id_archive[]=` : `id_archive=`;
+                let html = `
+                    <div class="test-section">
+                        <h2 class="success">✅ Test: ${formatDisplay}` + archiveId + `</h2>
+                        <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                            <strong>🔗 URL:</strong> <code>${url}</code>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-card">
+                                <h3>${data.data?.length || 0}</h3>
+                                <p>Documents Returned</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>${data.total || 0}</h3>
+                                <p>Total Available</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>${data.length || 0}</h3>
+                                <p>Requested Length</p>
+                            </div>
+                        </div>
+
+                        <h3>📄 Documents List:</h3>
+                `;
+
+                if (data.data && data.data.length > 0) {
+                    // Group by archive
+                    const byArchive = {};
+                    data.data.forEach(doc => {
+                        const archiveId = doc.id_archive || 'unknown';
+                        const archiveCode = doc.archive?.code || 'UNKNOWN';
+                        const archiveName = doc.archive?.name || 'Unknown Archive';
+                        const key = `${archiveId}|${archiveCode}|${archiveName}`;
+                        
+                        if (!byArchive[key]) {
+                            byArchive[key] = [];
+                        }
+                        byArchive[key].push(doc);
+                    });
+
+                    // Show breakdown by archive
+                    html += '<div style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 15px 0;">';
+                    html += '<h4>🔍 Archive Breakdown:</h4>';
+                    
+                    Object.entries(byArchive).forEach(([key, docs]) => {
+                        const [archiveId, archiveCode, archiveName] = key.split('|');
+                        const archiveParent = docs[0].archive?.id_parent;
+                        const isSubFolder = archiveParent !== null && archiveParent !== undefined;
+                        
+                        html += `
+                            <div style="margin: 10px 0; padding: 10px; background: white; border-left: 4px solid ${isSubFolder ? '#ff9800' : '#4CAF50'};">
+                                <strong>${isSubFolder ? '📂 SUB-FOLDER' : '📁 ROOT FOLDER'}: ${archiveCode}</strong><br>
+                                <small>Name: ${archiveName}</small><br>
+                                <small>Archive ID: ${archiveId} ${isSubFolder ? `(Parent: ${archiveParent})` : ''}</small><br>
+                                <strong>Documents: ${docs.length}</strong>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+
+                    // Show table
+                    html += `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Archive ID</th>
+                                    <th>Archive Code</th>
+                                    <th>Archive Name</th>
+                                    <th>Parent ID</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    data.data.forEach(doc => {
+                        const isSubFolder = doc.archive?.id_parent !== null && doc.archive?.id_parent !== undefined;
+                        html += `
+                            <tr style="background: ${isSubFolder ? '#fff3cd' : 'inherit'}">
+                                <td>${doc.id}</td>
+                                <td><strong>${doc.title || 'N/A'}</strong></td>
+                                <td>${doc.id_archive || 'N/A'}</td>
+                                <td>${doc.archive?.code || 'N/A'}</td>
+                                <td>${doc.archive?.name || 'N/A'}</td>
+                                <td>${doc.archive?.id_parent !== null ? doc.archive?.id_parent : 'ROOT'}</td>
+                                <td>${isSubFolder ? '📂 Sub-Folder' : '📁 Root'}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                            </tbody>
+                        </table>
+                    `;
+
+                    // Show raw JSON
+                    html += '<h3>📋 Raw Response:</h3>';
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    html += '<p class="warning">⚠️ No documents found</p>';
+                }
+
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section">
+                        <h2 class="error">❌ Error</h2>
+                        <p>${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function compareFilters() {
+            const token = getToken();
+            if (!token) return;
+
+            const archiveId = getArchiveId();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p class="info">⏳ Comparing both filter formats...</p>';
+
+            try {
+                // Test both formats
+                const urlArray = `${BASE_URL}/siadil/documents/?length=20&id_archive[]=${archiveId}`;
+                const urlSingle = `${BASE_URL}/siadil/documents/?length=20&id_archive=${archiveId}`;
+                
+                console.log('🔍 Testing Array Format:', urlArray);
+                console.log('🔍 Testing Single Format:', urlSingle);
+                
+                const [responseArray, responseSingle] = await Promise.all([
+                    fetch(urlArray, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch(urlSingle, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                ]);
+
+                const dataArray = await responseArray.json();
+                const dataSingle = await responseSingle.json();
+                
+                console.log('📦 Array Response:', dataArray);
+                console.log('📦 Single Response:', dataSingle);
+
+                // Analyze both
+                const analyzeData = (data) => {
+                    const docs = data.data || [];
+                    const rootDocs = docs.filter(d => d.id_archive == archiveId);
+                    const subDocs = docs.filter(d => d.id_archive != archiveId && d.archive?.id_parent == archiveId);
+                    const uniqueArchives = new Set(docs.map(d => d.id_archive));
+                    
+                    return {
+                        total: docs.length,
+                        rootDocs: rootDocs.length,
+                        subDocs: subDocs.length,
+                        uniqueArchives: Array.from(uniqueArchives),
+                        includesSubfolders: subDocs.length > 0
+                    };
+                };
+
+                const resultArray = analyzeData(dataArray);
+                const resultSingle = analyzeData(dataSingle);
+
+                let html = `
+                    <div class="test-section">
+                        <h2 class="success">🔍 Comparison: Array vs Single Format</h2>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                            <div style="border: 2px solid #4CAF50; border-radius: 8px; padding: 20px;">
+                                <h3>📋 Format: id_archive[]=9</h3>
+                                <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                                    <code>${urlArray}</code>
+                                </div>
+                                <div class="stats">
+                                    <div class="stat-card">
+                                        <h3>${resultArray.total}</h3>
+                                        <p>Total Docs</p>
+                                    </div>
+                                    <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                        <h3>${resultArray.rootDocs}</h3>
+                                        <p>Main Folder</p>
+                                    </div>
+                                    <div class="stat-card" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                                        <h3>${resultArray.subDocs}</h3>
+                                        <p>Sub-Folders</p>
+                                    </div>
+                                </div>
+                                <p><strong>Unique Archives:</strong> ${resultArray.uniqueArchives.join(', ')}</p>
+                                <p style="font-size: 20px; text-align: center; margin-top: 15px;">
+                                    ${resultArray.includesSubfolders 
+                                        ? '✅ <strong style="color: #4CAF50;">INCLUDES SUB-FOLDERS</strong>' 
+                                        : '❌ <strong style="color: #f44336;">ONLY MAIN FOLDER</strong>'}
+                                </p>
+                            </div>
+
+                            <div style="border: 2px solid #2196F3; border-radius: 8px; padding: 20px;">
+                                <h3>📋 Format: id_archive=9</h3>
+                                <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                                    <code>${urlSingle}</code>
+                                </div>
+                                <div class="stats">
+                                    <div class="stat-card">
+                                        <h3>${resultSingle.total}</h3>
+                                        <p>Total Docs</p>
+                                    </div>
+                                    <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                                        <h3>${resultSingle.rootDocs}</h3>
+                                        <p>Main Folder</p>
+                                    </div>
+                                    <div class="stat-card" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                                        <h3>${resultSingle.subDocs}</h3>
+                                        <p>Sub-Folders</p>
+                                    </div>
+                                </div>
+                                <p><strong>Unique Archives:</strong> ${resultSingle.uniqueArchives.join(', ')}</p>
+                                <p style="font-size: 20px; text-align: center; margin-top: 15px;">
+                                    ${resultSingle.includesSubfolders 
+                                        ? '✅ <strong style="color: #4CAF50;">INCLUDES SUB-FOLDERS</strong>' 
+                                        : '❌ <strong style="color: #f44336;">ONLY MAIN FOLDER</strong>'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="background: ${resultArray.includesSubfolders === resultSingle.includesSubfolders ? '#d4edda' : '#fff3cd'}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h3>📊 Conclusion:</h3>
+                            ${resultArray.includesSubfolders === resultSingle.includesSubfolders 
+                                ? `<p>✅ <strong>BOTH formats behave the SAME way</strong></p>
+                                   <p>${resultArray.includesSubfolders 
+                                       ? '🎉 Both include sub-folders (Scenario B)' 
+                                       : '⚠️ Both only return main folder documents (Scenario A)'}</p>`
+                                : `<p>⚠️ <strong>DIFFERENT behavior!</strong></p>
+                                   <p>Array format: ${resultArray.includesSubfolders ? 'Includes sub-folders' : 'Only main folder'}</p>
+                                   <p>Single format: ${resultSingle.includesSubfolders ? 'Includes sub-folders' : 'Only main folder'}</p>`
+                            }
+                        </div>
+
+                        <h3>📋 Raw Responses:</h3>
+                        <details>
+                            <summary><strong>Array Format Response</strong></summary>
+                            <pre>${JSON.stringify(dataArray, null, 2)}</pre>
+                        </details>
+                        <details>
+                            <summary><strong>Single Format Response</strong></summary>
+                            <pre>${JSON.stringify(dataSingle, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section">
+                        <h2 class="error">❌ Error</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testWithoutArchiveFilter() {
+            const token = getToken();
+            if (!token) return;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p class="info">⏳ Fetching documents WITHOUT id_archive filter...</p>';
+
+            try {
+                const url = `${BASE_URL}/siadil/documents/?start=0&length=10&sort[]=id&sortdir[]=DESC`;
+                
+                console.log('🔍 Testing URL:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                console.log('📦 Response:', data);
+
+                let html = `
+                    <div class="test-section">
+                        <h2 class="success">✅ Test WITHOUT id_archive Filter</h2>
+                        <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                            <strong>🔗 URL:</strong> <code>${url}</code>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-card">
+                                <h3>${data.data?.length || 0}</h3>
+                                <p>Documents Returned</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>${data.total || 0}</h3>
+                                <p>Total Available</p>
+                            </div>
+                        </div>
+
+                        <p class="info">ℹ️ This fetches documents from ALL archives (no filter)</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section">
+                        <h2 class="error">❌ Error</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function getArchiveDetails() {
+            const token = getToken();
+            if (!token) return;
+
+            const archiveId = getArchiveId();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p class="info">⏳ Fetching archive details...</p>';
+
+            try {
+                const url = `${BASE_URL}/siadil/archives/${archiveId}`;
+                
+                console.log('🔍 Testing URL:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                console.log('📦 Response:', data);
+
+                let html = `
+                    <div class="test-section">
+                        <h2 class="success">✅ Archive #${archiveId} Details</h2>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section">
+                        <h2 class="error">❌ Error</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function getArchiveTree() {
+            const token = getToken();
+            if (!token) return;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p class="info">⏳ Fetching full archive tree...</p>';
+
+            try {
+                const url = `${BASE_URL}/siadil/archives/`;
+                
+                console.log('🔍 Testing URL:', url);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                console.log('📦 Response:', data);
+
+                // Find archive #9 and its children
+                const archiveId = getArchiveId();
+                const targetArchive = data.data?.find(a => a.id == archiveId);
+                const children = data.data?.filter(a => a.id_parent == archiveId);
+
+                let html = `
+                    <div class="test-section">
+                        <h2 class="success">✅ Full Archive Tree</h2>
+                        
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                            <h3>📁 Archive #${archiveId} Details:</h3>
+                            ${targetArchive ? `
+                                <p><strong>Code:</strong> ${targetArchive.code}</p>
+                                <p><strong>Name:</strong> ${targetArchive.name}</p>
+                                <p><strong>Parent ID:</strong> ${targetArchive.id_parent || 'ROOT'}</p>
+                                <p><strong>Is Root:</strong> ${targetArchive.id_parent === null ? '✅ Yes' : '❌ No'}</p>
+                            ` : '<p class="error">❌ Archive not found</p>'}
+                        </div>
+
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                            <h3>📂 Sub-Folders (Children of #${archiveId}):</h3>
+                            ${children && children.length > 0 ? `
+                                <p><strong>Total Sub-Folders: ${children.length}</strong></p>
+                                <ul>
+                                    ${children.map(c => `
+                                        <li><strong>${c.code}</strong> - ${c.name} (ID: ${c.id})</li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p class="warning">⚠️ No sub-folders found</p>'}
+                        </div>
+
+                        <h3>📋 Full Archive List:</h3>
+                        <p>Total archives: ${data.data?.length || 0}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-section">
+                        <h2 class="error">❌ Error</h2>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

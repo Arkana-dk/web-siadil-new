@@ -528,7 +528,12 @@ export const DocumentsContainer = ({
       </div>
 
       {/* ===== PERUBAHAN FINAL ADA DI SINI ===== */}
-      <div className={`overflow-x-auto ${viewMode === "grid" ? "p-6" : ""}`}>
+      <div
+        className={`overflow-x-auto ${
+          viewMode === "grid" ? "p-6" : ""
+        } transition-opacity duration-300 ease-in-out`}
+        style={{ minHeight: "400px" }}
+      >
         {children}
       </div>
 

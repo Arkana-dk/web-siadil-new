@@ -215,7 +215,8 @@ export const useData = (currentFolderId: string) => {
       })),
     });
 
-    // Jika ada dokumen yang pernah dibuka, gunakan itu
+    // Hanya tampilkan dokumen yang sudah pernah dibuka (ada lastAccessed)
+    // Tidak ada fallback - jika belum ada yang dibuka, tampilkan empty state
     if (accessedDocs.length > 0) {
       const sorted = [...accessedDocs]
         .sort(
@@ -229,19 +230,11 @@ export const useData = (currentFolderId: string) => {
       return sorted;
     }
 
-    // Jika belum ada yang dibuka, tampilkan dokumen terbaru (recently updated) sebagai fallback
-    const recentDocs = [...uniqueDocuments]
-      .sort(
-        (a, b) =>
-          new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime()
-      )
-      .slice(0, 6);
-
+    // Tidak ada dokumen yang pernah dibuka - return empty array
     console.log(
-      "ℹ️ [Quick Access] Showing recent docs (fallback):",
-      recentDocs.length
+      "ℹ️ [Quick Access] No documents accessed yet - showing empty state"
     );
-    return recentDocs;
+    return [];
   }, [documents]);
 
   // Semua dokumen yang pernah dibuka (tanpa slice) untuk fitur "Lihat semua"
@@ -255,7 +248,8 @@ export const useData = (currentFolderId: string) => {
 
     const accessedDocs = uniqueDocuments.filter((doc) => doc.lastAccessed);
 
-    // Jika ada dokumen yang pernah dibuka, gunakan itu
+    // Hanya tampilkan dokumen yang sudah pernah dibuka (ada lastAccessed)
+    // Tidak ada fallback - konsisten dengan quickAccessDocuments
     if (accessedDocs.length > 0) {
       return [...accessedDocs]
         .sort(
@@ -263,16 +257,11 @@ export const useData = (currentFolderId: string) => {
             new Date(b.lastAccessed!).getTime() -
             new Date(a.lastAccessed!).getTime()
         )
-        .slice(0, 20); // View All tampilkan lebih banyak
+        .slice(0, 20); // View All tampilkan lebih banyak (max 20)
     }
 
-    // Fallback: dokumen terbaru
-    return [...uniqueDocuments]
-      .sort(
-        (a, b) =>
-          new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime()
-      )
-      .slice(0, 20);
+    // Tidak ada dokumen yang pernah dibuka - return empty array
+    return [];
   }, [documents]);
 
   const starredDocuments = useMemo(() => {

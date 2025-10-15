@@ -1,15 +1,18 @@
 # 🔥 Fix: Duplicate API Calls - FINAL SOLUTION
 
 ## ❌ Problem
-API masih dipanggil **berkali-kali secara duplikat** meskipun sudah ada fix di `usePersistentDocuments.ts`. 
+
+API masih dipanggil **berkali-kali secara duplikat** meskipun sudah ada fix di `usePersistentDocuments.ts`.
 
 ### Root Cause Analysis:
+
 1. **React Strict Mode** melakukan **double mounting** di development mode
 2. **Multiple component instances** bisa exist bersamaan (routing, remounting)
 3. **`getAllDocumentsFromAPI()` tidak punya global lock** → Setiap call melakukan full pagination dari awal
 4. Lock di `usePersistentDocuments` tidak cukup karena function `getAllDocumentsFromAPI` bisa dipanggil dari tempat lain
 
 ### Network Tab Evidence:
+
 ```
 documents?start=64000&length=800 (200) 4.35s  ← Duplicate!
 documents?start=72000&length=800 (200) 4.32s  ← Duplicate!
@@ -27,6 +30,7 @@ documents?start=80000&length=800 (200) 5.70s  ← Same start!
 Tambahkan **global-level lock** di function `getAllDocumentsFromAPI()` agar hanya **1 fetch berjalan** di seluruh aplikasi, bukan per-component.
 
 #### Before:
+
 ```typescript
 export async function getAllDocumentsFromAPI(...) {
   try {
@@ -46,6 +50,7 @@ export async function getAllDocumentsFromAPI(...) {
 **Masalah:** Setiap call ke function ini akan melakukan full fetch dari awal. Tidak ada mekanisme untuk **share result** antar caller.
 
 #### After:
+
 ```typescript
 // 🔥 GLOBAL LOCK: Prevent multiple simultaneous API fetches
 let isGlobalFetching = false;
@@ -66,7 +71,7 @@ export async function getAllDocumentsFromAPI(...) {
 
   // 🔥 Set global lock
   isGlobalFetching = true;
-  
+
   try {
     console.log("📡 Starting to fetch ALL documents");
 
@@ -76,11 +81,11 @@ export async function getAllDocumentsFromAPI(...) {
       // ... pagination logic ...
       return allDocuments;
     })();
-    
+
     // 🔥 Wait for fetch to complete
     const result = await globalFetchPromise;
     return result;
-    
+
   } catch (error) {
     console.error("❌ Error:", error);
     throw error;
@@ -98,6 +103,7 @@ export async function getAllDocumentsFromAPI(...) {
 ## 🎯 How It Works
 
 ### Scenario 1: Normal Single Call
+
 ```
 Component A → getAllDocumentsFromAPI()
   ├─ Lock: false → Proceed
@@ -109,6 +115,7 @@ Component A → getAllDocumentsFromAPI()
 ```
 
 ### Scenario 2: Duplicate Calls (React Strict Mode)
+
 ```
 Component A → getAllDocumentsFromAPI()  ← First call
   ├─ Lock: false → Proceed
@@ -124,6 +131,7 @@ Component A (remount) → getAllDocumentsFromAPI()  ← Second call (DUPLICATE!)
 ```
 
 ### Scenario 3: Multiple Components
+
 ```
 Component A → getAllDocumentsFromAPI()  ← First
   ├─ Lock: false → Proceed
@@ -173,10 +181,10 @@ export async function getAllDocumentsFromAPI(...) {
       // ... existing pagination code ...
       return allDocuments;
     })();
-    
+
     const result = await globalFetchPromise;
     return result;
-    
+
   } catch (error) {
     throw error;
   } finally {
@@ -193,12 +201,14 @@ export async function getAllDocumentsFromAPI(...) {
 ## 🎯 Expected Results
 
 ### Before Fix:
+
 - ❌ Multiple simultaneous fetches
 - ❌ Same pagination pages fetched multiple times
 - ❌ Network tab shows duplicate requests
 - ❌ Wasted bandwidth and slow loading
 
 ### After Fix:
+
 - ✅ **Only 1 fetch** active at any time
 - ✅ **Subsequent calls wait** and reuse result
 - ✅ **No duplicate requests** in Network tab
@@ -210,6 +220,7 @@ export async function getAllDocumentsFromAPI(...) {
 ## 🧪 Testing
 
 ### Test 1: React Strict Mode (Development)
+
 1. Run app in development mode (Strict Mode enabled)
 2. Open dashboard SIADIL
 3. Check Network tab
@@ -217,6 +228,7 @@ export async function getAllDocumentsFromAPI(...) {
 5. Console shows: "⚠️ Another fetch in progress, waiting..."
 
 ### Test 2: Multiple Tabs
+
 1. Open SIADIL in tab 1 → Wait for load
 2. Open SIADIL in tab 2
 3. Check Network tab in both tabs
@@ -224,15 +236,17 @@ export async function getAllDocumentsFromAPI(...) {
 5. Within same tab: No duplicates
 
 ### Test 3: Fast Navigation
+
 1. Navigate to SIADIL
 2. Immediately navigate away
 3. Navigate back to SIADIL
-4. **Expected**: 
+4. **Expected**:
    - First fetch aborted via cleanup
    - Second fetch starts fresh
    - No duplicate pagination
 
 ### Test 4: Console Logs
+
 Look for these logs to verify it's working:
 
 ```
@@ -259,15 +273,19 @@ Look for these logs to verify it's working:
 ## 🔍 Why This Solution Works
 
 ### 1. **Global Scope**
+
 Lock variables are **outside function** → Shared across ALL calls, ALL components
 
 ### 2. **Shared Promise**
+
 `globalFetchPromise` holds the **in-progress fetch** → Multiple callers await same promise
 
 ### 3. **Finally Block**
+
 Always releases lock, even if error → Prevents deadlock
 
 ### 4. **Dual-Layer Protection**
+
 - Layer 1: `usePersistentDocuments` lock (per-hook instance)
 - Layer 2: `getAllDocumentsFromAPI` lock (global, all callers)
 
@@ -276,17 +294,22 @@ Always releases lock, even if error → Prevents deadlock
 ## ⚠️ Important Notes
 
 ### Cache vs Lock
+
 - **Cache** (`documentsCache` in usePersistentDocuments): Stores **completed result**
 - **Lock** (`isGlobalFetching` in getAllDocumentsFromAPI): Prevents **concurrent execution**
 
 ### When Lock Releases
+
 Lock releases in 3 scenarios:
+
 1. ✅ Fetch completes successfully
 2. ❌ Fetch fails with error
 3. 🧹 Component unmounts → cleanup aborts
 
 ### Multiple Browser Tabs
+
 Each tab = separate JavaScript context → Separate locks
+
 - Tab 1 and Tab 2 can fetch simultaneously (different memory)
 - Within same tab: Lock prevents duplicates ✅
 
@@ -297,6 +320,7 @@ Each tab = separate JavaScript context → Separate locks
 **Duplicate API calls should now be completely prevented!** 🎉
 
 ### Checklist:
+
 - [x] Added global lock in `getAllDocumentsFromAPI`
 - [x] Implemented promise sharing for concurrent calls
 - [x] Added proper cleanup in finally block
@@ -305,6 +329,7 @@ Each tab = separate JavaScript context → Separate locks
 - [x] Tested with React Strict Mode scenario
 
 ### To Verify:
+
 1. Refresh page dan check Network tab
 2. Should see **ONLY ONE** set of pagination requests
 3. Console should show "⚠️ Another fetch in progress" if duplicate detected
