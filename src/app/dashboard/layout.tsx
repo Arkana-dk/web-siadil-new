@@ -44,20 +44,22 @@ export default function DashboardLayout({
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden transition-colors duration-300">
       <div
         className={`sticky top-0 h-full transition-all duration-300 shrink-0 ${
           isSidebarCollapsed ? "w-20" : "w-60"
-        }`}>
+        }`}
+      >
         <Sidebar onCollapseChange={setIsSidebarCollapsed} />
       </div>
-      <main className="flex-1 flex flex-col min-w-0 bg-gradient-to-br via-white dark:to-teal-900/30">
+      <main className="flex-1 flex flex-col min-w-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-black dark:via-gray-950 dark:to-gray-900 transition-colors duration-300">
         <SiadilHeader />
         <div
           ref={contentRef}
           className={`p-6 flex-1 overflow-y-auto custom-scrollbar ${
             isScrolling ? "scrolling" : ""
-          }`}>
+          }`}
+        >
           <div className="max-w-screen-2xl mx-auto w-full">{children}</div>
         </div>
       </main>

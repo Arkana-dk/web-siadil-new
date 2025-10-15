@@ -223,7 +223,7 @@ export const DocumentsContainer = ({
   }, [isArchiveFilterOpen]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
       <div className="bg-green-50 dark:bg-green-900/30 p-4 border-b border-green-200 dark:border-green-700 flex justify-between items-center gap-4">
         <div className="flex-1 max-w-md">
           <div className="relative">
@@ -250,7 +250,7 @@ export const DocumentsContainer = ({
               placeholder="Search by number, title..."
               value={filters.keyword}
               onChange={onFilterChange}
-              className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+              className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-950 dark:text-gray-200 dark:placeholder-gray-400"
             />
           </div>
         </div>

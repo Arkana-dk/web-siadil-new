@@ -31,7 +31,8 @@ API **TIDAK** include sub-folders:
    └─ Document D ❌ TIDAK diambil (id_archive=146)
 ```
 
-**Result:** 
+**Result:**
+
 - Total documents: **2** (hanya A, B)
 - Sub-folder documents: **0** (C, D tidak termasuk)
 
@@ -51,7 +52,8 @@ API **AUTO-INCLUDE** sub-folders:
    └─ Document D ✅ Diambil juga! (id_archive=146)
 ```
 
-**Result:** 
+**Result:**
+
 - Total documents: **4** (A, B, C, D)
 - Sub-folder documents: **2** (C, D termasuk)
 
@@ -62,11 +64,13 @@ API **AUTO-INCLUDE** sub-folders:
 Saya sudah **update** test file untuk support **2 format parameter**:
 
 ### **Format 1: `id_archive=9`** (Single Value)
+
 ```
 ?id_archive=9
 ```
 
 ### **Format 2: `id_archive[]=9`** (Array Format)
+
 ```
 ?id_archive[]=9
 ```
@@ -106,10 +110,8 @@ Klik salah satu button:
 
 1. **🚀 Test: id_archive[]=9 (Array)**
    - Test format: `?id_archive[]=9`
-   
 2. **🚀 Test: id_archive=9 (Single)**
    - Test format: `?id_archive=9`
-   
 3. **🔍 Compare Both Formats** ⭐ **RECOMMENDED**
    - Test KEDUA format sekaligus
    - Auto-compare results
@@ -131,12 +133,12 @@ Lihat di section **"Archive Breakdown"**:
 
 **Indicators:**
 
-| Indicator | Kemungkinan A | Kemungkinan B |
-|-----------|---------------|---------------|
-| **Documents with id_archive=9** | 100% | 50-70% |
-| **Documents with id_archive≠9** | 0% | 30-50% |
-| **"SUB-FOLDER" label** | ❌ Tidak ada | ✅ Ada |
-| **Unique archive IDs** | [9] | [9, 146, 147, ...] |
+| Indicator                       | Kemungkinan A | Kemungkinan B      |
+| ------------------------------- | ------------- | ------------------ |
+| **Documents with id_archive=9** | 100%          | 50-70%             |
+| **Documents with id_archive≠9** | 0%            | 30-50%             |
+| **"SUB-FOLDER" label**          | ❌ Tidak ada  | ✅ Ada             |
+| **Unique archive IDs**          | [9]           | [9, 146, 147, ...] |
 
 ---
 
@@ -173,6 +175,7 @@ Lihat di section **"Archive Breakdown"**:
 ```
 
 **Analysis:**
+
 - ✅ All `id_archive = 9`
 - ✅ All `archive.id_parent = null` (ROOT)
 - ❌ **TIDAK ada sub-folder documents**
@@ -197,11 +200,11 @@ Lihat di section **"Archive Breakdown"**:
     {
       "id": 2,
       "title": "Document C",
-      "id_archive": 146,  // ← BEDA! (sub-folder)
+      "id_archive": 146, // ← BEDA! (sub-folder)
       "archive": {
         "id": 146,
         "code": "DOKUMENTASIAPLIKASI",
-        "id_parent": 9  // ← Parent is Archive #9
+        "id_parent": 9 // ← Parent is Archive #9
       }
     }
   ],
@@ -210,6 +213,7 @@ Lihat di section **"Archive Breakdown"**:
 ```
 
 **Analysis:**
+
 - ✅ Mixed `id_archive` values (9, 146)
 - ✅ Some have `archive.id_parent = 9` (CHILDREN)
 - ✅ **ADA sub-folder documents!**
@@ -248,28 +252,30 @@ Dan auto-compare:
 
 ### **If Scenario A (Only Main Folder):**
 
-Kita **TIDAK BISA** pakai single `id_archive` parameter. 
+Kita **TIDAK BISA** pakai single `id_archive` parameter.
 
 Harus **manual build** multiple archives:
 
 ```typescript
 // Get archive #9 + all children
 const mainArchiveId = 9;
-const subFolders = archives.filter(a => a.parentId === mainArchiveId);
-const allArchiveIds = [mainArchiveId, ...subFolders.map(s => s.id)];
+const subFolders = archives.filter((a) => a.parentId === mainArchiveId);
+const allArchiveIds = [mainArchiveId, ...subFolders.map((s) => s.id)];
 
 // Build URL with multiple id_archive[] params
-const params = allArchiveIds.map(id => `id_archive[]=${id}`).join('&');
+const params = allArchiveIds.map((id) => `id_archive[]=${id}`).join("&");
 const url = `/documents/?${params}&length=100`;
 
 // Result: ?id_archive[]=9&id_archive[]=146&id_archive[]=147
 ```
 
 **Pros:**
+
 - ✅ Guaranteed include sub-folders
 - ✅ Full control
 
 **Cons:**
+
 - ❌ Complex logic
 - ❌ Need to fetch archives first
 - ❌ Long URL if many sub-folders
@@ -286,11 +292,13 @@ const url = `/documents/?id_archive=9&length=100`;
 ```
 
 **Pros:**
+
 - ✅ Simple code
 - ✅ Backend handles logic
 - ✅ Short URL
 
 **Cons:**
+
 - ❌ Depends on backend behavior
 - ❌ Less explicit
 
@@ -321,11 +329,13 @@ const url = `/api/demplon/documents?id_archive=${archiveId}&length=800`;
 ```
 
 **Benefits:**
+
 - ⚡ Faster loading (fetch hanya yang perlu)
 - 📉 Less data transfer
 - 🎯 More efficient
 
 **Trade-offs:**
+
 - 🔄 Need to re-fetch when switching archives
 - 💾 More complex caching
 
@@ -336,6 +346,7 @@ const url = `/api/demplon/documents?id_archive=${archiveId}&length=800`;
 ✅ **`test-archive-documents.html`**
 
 **New Features:**
+
 - 🆕 **Test Array Format:** `id_archive[]=9`
 - 🆕 **Test Single Format:** `id_archive=9`
 - 🆕 **Compare Both:** Side-by-side comparison
@@ -383,16 +394,19 @@ Run these tests and check:
 
 Setelah test, kita akan tahu:
 
-### **Question:** 
+### **Question:**
+
 > Apakah dari API ini untuk mengambil semua data di sub-foldernya?
 
 ### **Answer (After Test):**
 
 **Option 1:**
+
 > ✅ **YES!** API `id_archive=9` auto-include semua documents dari sub-folders juga.
 > Backend Demplon sudah handle recursive sub-folder query.
 
 **Option 2:**
+
 > ❌ **NO!** API `id_archive=9` HANYA ambil documents yang langsung di folder #9.
 > Sub-folder documents TIDAK termasuk. Need manual filtering di app.
 

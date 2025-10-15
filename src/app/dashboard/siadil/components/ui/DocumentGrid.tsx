@@ -88,7 +88,7 @@ export const DocumentGrid = ({
             id={`doc-grid-${doc.id}`}
             // right-click context menu disabled
             onClick={(e) => onDocumentSelect(doc.id, e)}
-            className={`group relative flex flex-col cursor-pointer overflow-hidden rounded-lg border bg-gradient-to-br p-4 shadow-sm transition-all duration-300 ease-in-out dark:border-gray-700 dark:from-gray-800 dark:to-gray-700/50 hover:shadow-md hover:-translate-y-0.5 ${
+            className={`group relative flex flex-col cursor-pointer overflow-hidden rounded-lg border bg-gradient-to-br from-white to-gray-50 p-4 shadow-sm transition-all duration-300 ease-in-out dark:border-gray-800 dark:from-gray-900 dark:to-black hover:shadow-md hover:-translate-y-0.5 ${
               selectedDocumentIds.has(doc.id)
                 ? "border-green-400 ring-2 ring-green-500/30 dark:border-green-600"
                 : "border-gray-200 hover:border-demplon dark:hover:border-demplon"
@@ -113,7 +113,7 @@ export const DocumentGrid = ({
               <div className="flex items-center -mr-2">
                 <button
                   onClick={(e) => onToggleStar(doc.id, e)}
-                  className="relative z-10 p-2 text-gray-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="relative z-10 p-2 text-gray-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-950"
                   aria-label="Toggle Star"
                 >
                   <svg
@@ -133,7 +133,7 @@ export const DocumentGrid = ({
                   </svg>
                 </button>
                 <button
-                  className="relative z-10 p-2 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-white"
+                  className="relative z-10 p-2 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-950 dark:hover:text-white"
                   aria-label="Actions"
                   onClick={(e) => {
                     e.stopPropagation();

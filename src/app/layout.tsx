@@ -23,22 +23,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="font-loading">
-      <head>
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-            /* Prevent FOUC */
-            html, body { 
-              margin: 0; 
-              padding: 0; 
-              background-color: white; 
-              font-family: system-ui, -apple-system, sans-serif;
-            }
-          `,
-          }}
-        />
-      </head>
-
       <body className={`${poppins.variable} antialiased`}>
         <Providers>
           {children}

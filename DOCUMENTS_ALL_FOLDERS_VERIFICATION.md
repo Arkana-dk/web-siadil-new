@@ -36,7 +36,7 @@ while (hasMore) {
     length: 800,
     reminder_active: false, // ← Fetch ALL documents
   });
-  
+
   allDocuments.push(...result.documents);
   hasMore = result.hasMore;
 }
@@ -70,6 +70,7 @@ const documentsEndpoint = `https://demplon.pupuk-kujang.co.id/admin/api/siadil/d
 ### **Test 1: Check Console Logs**
 
 1. **Run aplikasi:**
+
    ```bash
    npm run dev
    ```
@@ -77,6 +78,7 @@ const documentsEndpoint = `https://demplon.pupuk-kujang.co.id/admin/api/siadil/d
 2. **Login** dan buka Console (F12)
 
 3. **Look for these logs:**
+
    ```
    📡 getAllDocumentsFromAPI() - Starting to fetch ALL documents
    📊 Total documents in database: 450
@@ -100,18 +102,22 @@ Open browser console and run:
 
 ```javascript
 // Get all documents from localStorage
-const docs = JSON.parse(localStorage.getItem('siadil_documents_storage') || '[]');
+const docs = JSON.parse(
+  localStorage.getItem("siadil_documents_storage") || "[]"
+);
 
 // Get all archives
-const archives = JSON.parse(localStorage.getItem('siadil_archives_storage') || '[]');
+const archives = JSON.parse(
+  localStorage.getItem("siadil_archives_storage") || "[]"
+);
 
-console.log('📊 VERIFICATION: Documents Distribution');
-console.log('Total documents:', docs.length);
-console.log('Total archives:', archives.length);
+console.log("📊 VERIFICATION: Documents Distribution");
+console.log("Total documents:", docs.length);
+console.log("Total archives:", archives.length);
 
 // Group by archive
 const byArchive = {};
-docs.forEach(doc => {
+docs.forEach((doc) => {
   const archiveId = doc.parentId;
   if (!byArchive[archiveId]) {
     byArchive[archiveId] = [];
@@ -119,52 +125,64 @@ docs.forEach(doc => {
   byArchive[archiveId].push(doc);
 });
 
-console.log('\n📂 Documents per Archive:');
+console.log("\n📂 Documents per Archive:");
 Object.entries(byArchive).forEach(([archiveId, docs]) => {
-  const archive = archives.find(a => a.id === archiveId);
-  const archiveName = archive ? `${archive.code} - ${archive.name}` : `Unknown (${archiveId})`;
-  const isRoot = archive && archive.parentId === 'root';
-  const indent = isRoot ? '' : '  └─ ';
+  const archive = archives.find((a) => a.id === archiveId);
+  const archiveName = archive
+    ? `${archive.code} - ${archive.name}`
+    : `Unknown (${archiveId})`;
+  const isRoot = archive && archive.parentId === "root";
+  const indent = isRoot ? "" : "  └─ ";
   console.log(`${indent}${archiveName}: ${docs.length} documents`);
 });
 
 // Check for sub-folder documents
-const subFolderDocs = docs.filter(doc => {
-  const archive = archives.find(a => a.id === doc.parentId);
-  return archive && archive.parentId !== 'root';
+const subFolderDocs = docs.filter((doc) => {
+  const archive = archives.find((a) => a.id === doc.parentId);
+  return archive && archive.parentId !== "root";
 });
 
-console.log('\n✅ VERIFICATION RESULT:');
-console.log('Documents in root folders:', docs.length - subFolderDocs.length);
-console.log('Documents in sub-folders:', subFolderDocs.length);
-console.log('Percentage in sub-folders:', ((subFolderDocs.length / docs.length) * 100).toFixed(1) + '%');
+console.log("\n✅ VERIFICATION RESULT:");
+console.log("Documents in root folders:", docs.length - subFolderDocs.length);
+console.log("Documents in sub-folders:", subFolderDocs.length);
+console.log(
+  "Percentage in sub-folders:",
+  ((subFolderDocs.length / docs.length) * 100).toFixed(1) + "%"
+);
 ```
 
 ### **Test 3: Check Specific Sub-Folder**
 
 ```javascript
 // Check specific sub-folder (example: TIK → DOKUMENTASIAPLIKASI)
-const archives = JSON.parse(localStorage.getItem('siadil_archives_storage') || '[]');
-const docs = JSON.parse(localStorage.getItem('siadil_documents_storage') || '[]');
+const archives = JSON.parse(
+  localStorage.getItem("siadil_archives_storage") || "[]"
+);
+const docs = JSON.parse(
+  localStorage.getItem("siadil_documents_storage") || "[]"
+);
 
 // Find parent folder
-const parentFolder = archives.find(a => a.code === 'TIK');
-console.log('Parent folder:', parentFolder);
+const parentFolder = archives.find((a) => a.code === "TIK");
+console.log("Parent folder:", parentFolder);
 
 // Find sub-folders
-const subFolders = archives.filter(a => a.parentId === parentFolder.id);
-console.log('Sub-folders:', subFolders.length);
-subFolders.forEach(sub => {
+const subFolders = archives.filter((a) => a.parentId === parentFolder.id);
+console.log("Sub-folders:", subFolders.length);
+subFolders.forEach((sub) => {
   console.log(`  - ${sub.code}: ${sub.name}`);
 });
 
 // Check documents in each sub-folder
-subFolders.forEach(sub => {
-  const docsInSub = docs.filter(doc => doc.parentId === sub.id);
+subFolders.forEach((sub) => {
+  const docsInSub = docs.filter((doc) => doc.parentId === sub.id);
   console.log(`\n📄 ${sub.code} - ${sub.name}:`);
   console.log(`   Documents: ${docsInSub.length}`);
   if (docsInSub.length > 0) {
-    console.log('   Sample:', docsInSub.slice(0, 3).map(d => d.title));
+    console.log(
+      "   Sample:",
+      docsInSub.slice(0, 3).map((d) => d.title)
+    );
   }
 });
 ```
@@ -198,8 +216,8 @@ Search: Kosongkan search box
 
 ```javascript
 // Di browser console
-localStorage.removeItem('siadil_documents_storage');
-localStorage.removeItem('siadil_documents_fetched');
+localStorage.removeItem("siadil_documents_storage");
+localStorage.removeItem("siadil_documents_fetched");
 window.location.reload();
 ```
 
@@ -221,7 +239,7 @@ Response should include documents from ALL archives:
     {
       "id": 123,
       "title": "Document A",
-      "id_archive": 17,  // ← Parent folder (TIK)
+      "id_archive": 17, // ← Parent folder (TIK)
       "archive": {
         "id": 17,
         "code": "TIK",
@@ -232,12 +250,12 @@ Response should include documents from ALL archives:
     {
       "id": 124,
       "title": "Document B",
-      "id_archive": 146,  // ← Sub-folder (DOKUMENTASIAPLIKASI)
+      "id_archive": 146, // ← Sub-folder (DOKUMENTASIAPLIKASI)
       "archive": {
         "id": 146,
         "code": "DOKUMENTASIAPLIKASI",
         "name": "Dokumentasi Aplikasi",
-        "id_parent": 17  // ← Child of TIK
+        "id_parent": 17 // ← Child of TIK
       }
     }
   ],
@@ -280,7 +298,7 @@ Code di `useData.ts`:
 
 ```typescript
 const relevantFolderIds = [
-  currentFolderId,  // TIK
+  currentFolderId, // TIK
   ...getAllDescendantIds(currentFolderId, archives), // Sub-folders
 ];
 
@@ -327,15 +345,18 @@ DOKUMENTASIAPLIKASI (15 documents)
 ### **Files Involved:**
 
 1. **`src/app/dashboard/siadil/hooks/usePersistentDocuments.ts`**
+
    - Call: `getAllDocumentsFromAPI()`
    - Store: All documents in state + localStorage
 
 2. **`src/app/dashboard/siadil/data.ts`**
+
    - Function: `getAllDocumentsFromAPI()` - Loop pagination
    - Function: `getDocumentsFromAPI()` - Single page fetch
    - Transform: Demplon format → Internal format
 
 3. **`src/app/api/demplon/documents/route.ts`**
+
    - Proxy: Next.js → Demplon API
    - URL: `https://demplon.pupuk-kujang.co.id/admin/api/siadil/documents/`
    - Params: `length` + `reminder_active` (NO `id_archive`)
@@ -348,7 +369,10 @@ DOKUMENTASIAPLIKASI (15 documents)
 
 ```typescript
 // Get ALL descendant folder IDs (recursive)
-const getAllDescendantIds = (folderId: string, archives: Archive[]): string[] => {
+const getAllDescendantIds = (
+  folderId: string,
+  archives: Archive[]
+): string[] => {
   const directChildren = archives
     .filter((archive) => archive.parentId === folderId)
     .map((archive) => archive.id);
@@ -367,12 +391,12 @@ const searchableDocuments = useMemo(() => {
   if (currentFolderId === "root") {
     return activeDocuments; // ✅ ALL documents
   }
-  
+
   const relevantFolderIds = [
     currentFolderId,
     ...getAllDescendantIds(currentFolderId, archives), // ✅ Include sub-folders
   ];
-  
+
   return activeDocuments.filter((doc) =>
     relevantFolderIds.includes(doc.parentId)
   );
@@ -391,6 +415,7 @@ const searchableDocuments = useMemo(() => {
 - ✅ Root view show **ALL documents** tanpa filter
 
 **Next Step:**
+
 - User harus **verify di browser** bahwa count sudah benar
 - Compare dengan **website perusahaan**
 - Report jika ada **specific documents missing**
