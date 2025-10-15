@@ -926,7 +926,9 @@ export async function getAllDocumentsFromAPI(
 ): Promise<Document[]> {
   // 🔥 FIX: Jika sudah ada fetch yang berjalan, tunggu dan return hasilnya
   if (isGlobalFetching && globalFetchPromise) {
-    console.log("⚠️ getAllDocumentsFromAPI() - Another fetch in progress, waiting...");
+    console.log(
+      "⚠️ getAllDocumentsFromAPI() - Another fetch in progress, waiting..."
+    );
     try {
       const result = await globalFetchPromise;
       console.log("✅ Reusing result from ongoing fetch:", result.length);
@@ -939,7 +941,7 @@ export async function getAllDocumentsFromAPI(
 
   // � Set global lock
   isGlobalFetching = true;
-  
+
   try {
     console.log(
       "�📡 getAllDocumentsFromAPI() - Starting to fetch ALL documents"
@@ -947,88 +949,86 @@ export async function getAllDocumentsFromAPI(
 
     // 🔥 Create promise untuk shared fetch
     globalFetchPromise = (async () => {
+      const allDocuments: Document[] = [];
+      const PAGE_SIZE = 800; // 🔥 INCREASED: 300 → 800 untuk lebih cepat!
+      let currentPage = 1;
+      let hasMore = true;
+      let totalDocuments = 0;
 
-    const allDocuments: Document[] = [];
-    const PAGE_SIZE = 800; // 🔥 INCREASED: 300 → 800 untuk lebih cepat!
-    let currentPage = 1;
-    let hasMore = true;
-    let totalDocuments = 0;
-
-    while (hasMore) {
-      const start = (currentPage - 1) * PAGE_SIZE;
-      console.log(
-        `📄 Fetching page ${currentPage} (start: ${start}, length: ${PAGE_SIZE})`
-      );
-
-      const result = await getDocumentsFromAPI(accessToken, {
-        start,
-        length: PAGE_SIZE,
-        reminder_active: false,
-      });
-
-      // Update total di page pertama
-      if (currentPage === 1) {
-        totalDocuments = result.total;
-        console.log(`📊 Total documents in database: ${totalDocuments}`);
-      }
-
-      // Gabungkan documents
-      allDocuments.push(...result.documents);
-
-      const loadedCount = allDocuments.length;
-      const percentage =
-        totalDocuments > 0
-          ? Math.round((loadedCount / totalDocuments) * 100)
-          : 100;
-
-      console.log(
-        `✅ Page ${currentPage} fetched: ${result.documents.length} documents`
-      );
-      console.log(
-        `📊 Progress: ${loadedCount}/${totalDocuments} (${percentage}%)`
-      );
-
-      // 🔥 NEW: Call onPageLoaded untuk progressive UI update
-      // Setiap page berhasil dimuat, langsung update UI
-      if (onPageLoaded) {
+      while (hasMore) {
+        const start = (currentPage - 1) * PAGE_SIZE;
         console.log(
-          `🔄 Progressive Loading: Updating UI with ${loadedCount} documents`
+          `📄 Fetching page ${currentPage} (start: ${start}, length: ${PAGE_SIZE})`
         );
-        onPageLoaded([...allDocuments]); // Pass copy of current documents
-      }
 
-      // Call progress callback
-      if (onProgress) {
-        onProgress({
-          page: currentPage,
-          loaded: loadedCount,
-          total: totalDocuments,
-          percentage,
+        const result = await getDocumentsFromAPI(accessToken, {
+          start,
+          length: PAGE_SIZE,
+          reminder_active: false,
         });
+
+        // Update total di page pertama
+        if (currentPage === 1) {
+          totalDocuments = result.total;
+          console.log(`📊 Total documents in database: ${totalDocuments}`);
+        }
+
+        // Gabungkan documents
+        allDocuments.push(...result.documents);
+
+        const loadedCount = allDocuments.length;
+        const percentage =
+          totalDocuments > 0
+            ? Math.round((loadedCount / totalDocuments) * 100)
+            : 100;
+
+        console.log(
+          `✅ Page ${currentPage} fetched: ${result.documents.length} documents`
+        );
+        console.log(
+          `📊 Progress: ${loadedCount}/${totalDocuments} (${percentage}%)`
+        );
+
+        // 🔥 NEW: Call onPageLoaded untuk progressive UI update
+        // Setiap page berhasil dimuat, langsung update UI
+        if (onPageLoaded) {
+          console.log(
+            `🔄 Progressive Loading: Updating UI with ${loadedCount} documents`
+          );
+          onPageLoaded([...allDocuments]); // Pass copy of current documents
+        }
+
+        // Call progress callback
+        if (onProgress) {
+          onProgress({
+            page: currentPage,
+            loaded: loadedCount,
+            total: totalDocuments,
+            percentage,
+          });
+        }
+
+        // Check jika masih ada data
+        hasMore = result.hasMore;
+        currentPage++;
+
+        // Safety check: prevent infinite loop
+        if (currentPage > 1000) {
+          console.warn("⚠️ Safety limit reached (1000 pages). Stopping...");
+          break;
+        }
       }
 
-      // Check jika masih ada data
-      hasMore = result.hasMore;
-      currentPage++;
+      console.log(`✅ getAllDocumentsFromAPI() COMPLETE!`);
+      console.log(`   Total documents fetched: ${allDocuments.length}`);
+      console.log(`   Total pages: ${currentPage - 1}`);
 
-      // Safety check: prevent infinite loop
-      if (currentPage > 1000) {
-        console.warn("⚠️ Safety limit reached (1000 pages). Stopping...");
-        break;
-      }
-    }
-
-    console.log(`✅ getAllDocumentsFromAPI() COMPLETE!`);
-    console.log(`   Total documents fetched: ${allDocuments.length}`);
-    console.log(`   Total pages: ${currentPage - 1}`);
-
-    return allDocuments;
+      return allDocuments;
     })(); // End of globalFetchPromise async IIFE
-    
+
     // 🔥 Wait for fetch to complete
     const result = await globalFetchPromise;
     return result;
-    
   } catch (error) {
     console.error("❌ Error in getAllDocumentsFromAPI:", error);
     throw error;

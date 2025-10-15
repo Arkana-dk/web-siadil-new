@@ -1,35 +1,11 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Archive } from "../types";
-import { getArchivesFromAPI, getArchivesTreeFromAPI } from "../data";
+import { getArchivesFromAPI } from "../data";
 import { getAccessTokenFromServer } from "@/lib/api";
 
 const SIADIL_ARCHIVES_KEY = "siadil_archives_storage";
 const SIADIL_ARCHIVES_FETCHED_KEY = "siadil_archives_fetched";
-
-/**
- * Helper function untuk flatten tree structure menjadi flat list
- * Digunakan untuk convert hierarchical archives ke flat array
- */
-function flattenArchivesTree(archives: Archive[]): Archive[] {
-  const result: Archive[] = [];
-
-  function traverse(items: Archive[]) {
-    for (const item of items) {
-      // Add item tanpa children untuk flat list
-      const { children, ...flatItem } = item;
-      result.push(flatItem as Archive);
-
-      // Recursively traverse children
-      if (children && children.length > 0) {
-        traverse(children);
-      }
-    }
-  }
-
-  traverse(archives);
-  return result;
-}
 
 export function usePersistentArchives(): [
   Archive[],
@@ -77,27 +53,54 @@ export function usePersistentArchives(): [
           console.log("🔑 Using token:", accessToken.substring(0, 30) + "...");
           console.log("🌐 API will be called with token");
 
-          // 🌲 Try to fetch Archives Tree API first (hierarchical structure)
-          console.log("🌲 Attempting to fetch Archives Tree API...");
+          // 🔥 ALWAYS use Flat API - lebih reliable dan complete
+          console.log(
+            "📁 Fetching ALL archives from Flat API (includes all sub-archives)..."
+          );
           let apiArchives: Archive[];
 
           try {
-            const treeArchives = await getArchivesTreeFromAPI(accessToken);
-            console.log("✅ Archives Tree API loaded successfully!");
-            console.log("   - Total root archives:", treeArchives.length);
-            console.log("   - Structure: Hierarchical with children");
-
-            // Flatten tree structure untuk kemudahan penggunaan
-            apiArchives = flattenArchivesTree(treeArchives);
-            console.log("   - Flattened archives:", apiArchives.length);
-          } catch (treeError) {
-            console.warn(
-              "⚠️ Archives Tree API failed, falling back to flat list"
-            );
-            console.warn("   - Error:", treeError);
-            // Fallback to flat Archives API
+            // Flat API mengembalikan SEMUA archives (parent + children) dalam single array
+            // Format: [{id: 17, id_parent: null}, {id: 146, id_parent: 17}, ...]
             apiArchives = await getArchivesFromAPI(accessToken);
-            console.log("📁 Flat Archives API loaded as fallback");
+
+            console.log("✅ Flat Archives API loaded successfully!");
+            console.log(
+              "   - Total archives (including sub-archives):",
+              apiArchives.length
+            );
+
+            // Analyze hierarchy
+            const roots = apiArchives.filter((a) => a.parentId === "root");
+            const children = apiArchives.filter((a) => a.parentId !== "root");
+
+            console.log("   - Root archives:", roots.length);
+            console.log("   - Sub-archives (children):", children.length);
+
+            // Log breakdown by parent
+            console.log("\n📊 Archives Breakdown:");
+            roots.forEach((root) => {
+              const rootChildren = apiArchives.filter(
+                (a) => a.parentId === root.id
+              );
+              console.log(
+                `   ${root.code}: ${rootChildren.length} sub-archive(s)`
+              );
+
+              // Log sub-archives
+              if (rootChildren.length > 0) {
+                rootChildren.forEach((child) => {
+                  const grandchildren = apiArchives.filter(
+                    (a) => a.parentId === child.id
+                  );
+                  const icon = grandchildren.length > 0 ? "📂" : "📄";
+                  console.log(`      ${icon} ${child.code} - ${child.name}`);
+                });
+              }
+            });
+          } catch (error) {
+            console.error("❌ Failed to fetch archives from Flat API");
+            throw error;
           }
 
           console.log("📦 API Response received:");
