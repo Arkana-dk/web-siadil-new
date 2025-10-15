@@ -27,10 +27,10 @@ const Tooltip = ({
     >
       {children}
       {show && (
-        <div className="absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-700 rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 mb-2 min-w-[200px] max-w-[400px]">
+        <div className="absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-950 rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 mb-2 min-w-[200px] max-w-[400px]">
           {text}
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-            <div className="border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+            <div className="border-4 border-transparent border-t-gray-900 dark:border-t-gray-950"></div>
           </div>
         </div>
       )}
@@ -238,7 +238,7 @@ export const DocumentTable = ({
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-black divide-y divide-gray-100 dark:divide-gray-900">
               {uniqueDocuments.map((doc, index) => (
                 <tr
                   key={doc.id}
@@ -404,7 +404,7 @@ export const DocumentTable = ({
                         return (
                           <Tooltip text={tooltipArchive}>
                             <div className="space-y-1 line-clamp-2 break-words cursor-pointer">
-                              <div className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                              <div className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300">
                                 {archiveLabel}
                               </div>
                               {archiveCode && (

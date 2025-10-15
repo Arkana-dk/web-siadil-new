@@ -74,7 +74,7 @@ const TrashView: React.FC<TrashViewProps> = ({
           {filteredArchives.map((archive) => (
             <div
               key={archive.id}
-              className="flex items-center justify-between p-4 rounded-lg border bg-white hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
+              className="flex items-center justify-between p-4 rounded-lg border bg-white hover:border-gray-300 dark:bg-gray-900 dark:border-gray-800 dark:hover:border-gray-700"
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600">
@@ -136,7 +136,7 @@ const TrashView: React.FC<TrashViewProps> = ({
           {filteredDocuments.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center justify-between p-4 rounded-lg border bg-white hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:hover:border-gray-600"
+              className="flex items-center justify-between p-4 rounded-lg border bg-white hover:border-gray-300 dark:bg-gray-900 dark:border-gray-800 dark:hover:border-gray-700"
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex-shrink-0">

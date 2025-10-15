@@ -66,7 +66,7 @@ const Sidebar = ({ onCollapseChange }: SidebarProps) => {
       {/* 2. Div Sidebar Lama, sekarang hanya fokus pada layout & scroll */}
       <div
         ref={sidebarRef} // ref untuk event listener
-        className={`custom-scrollbar max-h-screen overflow-y-auto overflow-x-hidden border-r bg-white transition-all duration-300 ${
+        className={`custom-scrollbar max-h-screen overflow-y-auto overflow-x-hidden border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-black transition-all duration-300 ${
           isCollapsed ? "w-20" : "w-60"
         } ${isScrolling ? "scrolling" : ""}`} // Tambah kelas 'scrolling'
       >
@@ -105,7 +105,7 @@ const Sidebar = ({ onCollapseChange }: SidebarProps) => {
             <div>
               <div className="h-8 flex items-center">
                 <div
-                  className={`text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 transition-opacity duration-200 ${
+                  className={`text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-2 transition-opacity duration-200 ${
                     isCollapsed ? "opacity-0" : "opacity-100"
                   }`}
                 >
@@ -153,7 +153,7 @@ const Sidebar = ({ onCollapseChange }: SidebarProps) => {
             <div className="mt-4">
               <div className="h-8 flex items-center">
                 <div
-                  className={`text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 transition-opacity duration-200 ${
+                  className={`text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-2 transition-opacity duration-200 ${
                     isCollapsed ? "opacity-0" : "opacity-100"
                   }`}
                 >
@@ -200,7 +200,7 @@ const Sidebar = ({ onCollapseChange }: SidebarProps) => {
             <div className="mt-4">
               <div className="h-8 flex items-center">
                 <div
-                  className={`text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 transition-opacity duration-200 ${
+                  className={`text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-2 transition-opacity duration-200 ${
                     isCollapsed ? "opacity-0" : "opacity-100"
                   }`}
                 >
@@ -291,11 +291,11 @@ const Sidebar = ({ onCollapseChange }: SidebarProps) => {
         <button
           onClick={handleCollapseToggle}
           // Posisi: di atas, dan pusat tombol tepat di garis tepi sidebar
-          className={`absolute top-8 transition-all duration-300 z-30 bg-white ring-1 ring-gray-200 rounded-2xl h-8 w-8 flex items-center justify-center shadow-sm
+          className={`absolute top-8 transition-all duration-300 z-30 bg-white dark:bg-gray-900 ring-1 ring-gray-200 dark:ring-gray-800 rounded-2xl h-8 w-8 flex items-center justify-center shadow-sm hover:shadow-md hover:scale-110
             ${isCollapsed ? "left-[64px]" : "left-[224px]"}`}
         >
           <svg
-            className={`block text-gray-800 transition-transform duration-200 ${
+            className={`block text-gray-800 dark:text-gray-100 transition-transform duration-200 ${
               isCollapsed ? "rotate-180" : ""
             }`}
             width="18"
@@ -352,10 +352,10 @@ const MenuItemLink = ({
           isCollapsed ? "justify-center px-2" : "justify-between" // Dinamis: center saat collapsed
         } py-2 transition-all duration-300 text-sm rounded-md ${
           isActive
-            ? "bg-green-700 text-white"
+            ? "bg-green-700 dark:bg-green-600 text-white"
             : isHighlighted
-            ? "text-green-800 hover:bg-green-50"
-            : "text-gray-700 hover:bg-gray-100"
+            ? "text-green-800 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/10"
+            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-900"
         }`}
         title={isCollapsed ? title || String(children) : ""}
       >

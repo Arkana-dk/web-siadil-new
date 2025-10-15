@@ -114,13 +114,13 @@ const ArchiveCard = ({
   return (
     <div
       onClick={onClick}
-      className="group relative flex cursor-pointer flex-col items-start overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 ease-in-out hover:shadow-xl hover:shadow-teal-500/20 hover:border-teal-300 hover:-translate-y-1 hover:scale-[1.02] dark:border-gray-700 dark:bg-gray-900/50 dark:hover:border-teal-600 dark:hover:shadow-teal-500/30 h-[156px]"
+      className="group relative flex cursor-pointer flex-col items-start overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 ease-in-out hover:shadow-xl hover:shadow-teal-500/20 hover:border-teal-300 hover:-translate-y-1 hover:scale-[1.02] dark:border-gray-800 dark:bg-gray-900 dark:hover:border-teal-600 dark:hover:shadow-teal-500/30 h-[156px]"
     >
       {/* Three dots menu button - always visible */}
       {onMenuClick && (
         <button
           onClick={handleMenuClick}
-          className="absolute top-2 right-2 z-10 flex items-center justify-center w-6 h-6 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors"
+          className="absolute top-2 right-2 z-10 flex items-center justify-center w-6 h-6 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-950 dark:hover:text-gray-300 transition-colors"
           aria-label="Menu"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

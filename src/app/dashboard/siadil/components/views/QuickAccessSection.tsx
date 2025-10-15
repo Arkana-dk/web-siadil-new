@@ -89,7 +89,7 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
           <button
             type="button"
             onClick={onViewAll}
-            className="group inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all hover:bg-demplon hover:text-white hover:border-demplon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-demplon/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-demplon"
+            className="group inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all hover:bg-demplon hover:text-white hover:border-demplon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-demplon/40 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-demplon dark:hover:border-demplon"
             aria-label="View all Quick Access"
           >
             View All
@@ -114,7 +114,7 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
       </p>
 
       {displayedDocs.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-8 text-center">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#01793B] to-emerald-500 text-white ring-1 ring-white/20">
             <svg
               className="h-6 w-6"
@@ -151,7 +151,7 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
               aria-label={`Open document ${cleanTitle(doc.title)}`}
               onKeyDown={(e) => handleKeyDown(e, doc)}
               onClick={() => onDocumentClick(doc)}
-              className="group relative flex w-full cursor-pointer items-center gap-4 overflow-hidden rounded-xl bg-white/70 p-4 pl-5 ring-1 ring-gray-200/70 transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-[#01793B]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#01793B]/45 dark:bg-gray-900/50 dark:ring-white/10"
+              className="group relative flex w-full cursor-pointer items-center gap-4 overflow-hidden rounded-xl bg-white p-4 pl-5 ring-1 ring-gray-200 transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-[#01793B]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#01793B]/45 dark:bg-gray-900 dark:ring-gray-800 dark:hover:shadow-lg dark:hover:shadow-demplon/10"
             >
               {/* Left accent bar */}
               <span className="pointer-events-none absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-[#01793B] to-emerald-400 opacity-90" />
@@ -187,7 +187,7 @@ const QuickAccessSection: React.FC<QuickAccessSectionProps> = ({
                     </h4>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <span
-                        className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap"
+                        className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-gray-600 dark:bg-gray-950 dark:text-gray-400 whitespace-nowrap"
                         title={`Archive: ${getArchiveName(doc)}`}
                       >
                         {getArchiveLabel(doc)}

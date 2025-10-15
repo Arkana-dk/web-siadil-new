@@ -3,6 +3,7 @@
 ## 🎯 **Question**
 
 Apakah dengan parameter **`id_archive[]=9`** bisa fetch documents dari:
+
 - ✅ **Folder #9** itu sendiri
 - ❓ **SEMUA sub-folder** di bawah folder #9
 
@@ -21,13 +22,13 @@ GET https://demplon.pupuk-kujang.co.id/admin/api/siadil/documents/
 
 ### **Parameters:**
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `start` | 0 | Offset untuk pagination |
-| `length` | 10 | Jumlah documents per page |
-| `sort[]` | id | Sort by ID |
-| `sortdir[]` | DESC | Descending order (newest first) |
-| `id_archive[]` | 9 | **Filter by archive ID** |
+| Parameter      | Value | Description                     |
+| -------------- | ----- | ------------------------------- |
+| `start`        | 0     | Offset untuk pagination         |
+| `length`       | 10    | Jumlah documents per page       |
+| `sort[]`       | id    | Sort by ID                      |
+| `sortdir[]`    | DESC  | Descending order (newest first) |
+| `id_archive[]` | 9     | **Filter by archive ID**        |
 
 ---
 
@@ -72,12 +73,14 @@ Folder #9 (TIK)
 ### **Method 1: Using Test HTML File**
 
 1. **Open file:**
+
    ```bash
    # Double click atau open di browser:
    test-archive-documents.html
    ```
 
 2. **Get Access Token:**
+
    - Login ke aplikasi web Demplon
    - Open DevTools (F12) → Application → Cookies
    - Copy value dari `next-auth.session-token` atau `access_token`
@@ -111,23 +114,23 @@ Headers:
     {
       "id": 123,
       "title": "Document A",
-      "id_archive": 9,  // ← Main folder
+      "id_archive": 9, // ← Main folder
       "archive": {
         "id": 9,
         "code": "TIK",
         "name": "Teknologi Informasi",
-        "id_parent": null  // ← ROOT folder
+        "id_parent": null // ← ROOT folder
       }
     },
     {
       "id": 124,
       "title": "Document C",
-      "id_archive": 146,  // ← Sub-folder! (NOT 9)
+      "id_archive": 146, // ← Sub-folder! (NOT 9)
       "archive": {
         "id": 146,
         "code": "DOKUMENTASIAPLIKASI",
         "name": "Dokumentasi Aplikasi",
-        "id_parent": 9  // ← Parent is folder #9
+        "id_parent": 9 // ← Parent is folder #9
       }
     }
   ],
@@ -138,12 +141,12 @@ Headers:
 
 **Key Indicators:**
 
-| Indicator | Scenario A | Scenario B |
-|-----------|-----------|-----------|
-| **Documents with `id_archive=9`** | ALL (100%) | SOME |
-| **Documents with `id_archive≠9`** | NONE (0%) | YES! |
-| **`archive.id_parent`** | All `null` | Mix of `null` and `9` |
-| **Useful for app?** | ❌ NO | ✅ YES |
+| Indicator                         | Scenario A | Scenario B            |
+| --------------------------------- | ---------- | --------------------- |
+| **Documents with `id_archive=9`** | ALL (100%) | SOME                  |
+| **Documents with `id_archive≠9`** | NONE (0%)  | YES!                  |
+| **`archive.id_parent`**           | All `null` | Mix of `null` and `9` |
+| **Useful for app?**               | ❌ NO      | ✅ YES                |
 
 ---
 
@@ -162,6 +165,7 @@ Headers:
 ```
 
 **Indicators:**
+
 - ✅ All `id_archive = 9`
 - ✅ All `archive.id_parent = null`
 - ❌ **NOT what we want** (missing sub-folder docs)
@@ -181,6 +185,7 @@ Headers:
 ```
 
 **Indicators:**
+
 - ✅ Mix of `id_archive` values (9, 146, 147)
 - ✅ Some `archive.id_parent = 9` (children)
 - ✅ **This is what we want!**
@@ -197,14 +202,14 @@ We need to **manually build the filter** in our app:
 // Step 1: Get all descendant archive IDs
 function getAllDescendantIds(archiveId: string, archives: Archive[]): string[] {
   const children = archives
-    .filter(a => a.parentId === archiveId)
-    .map(a => a.id);
-  
+    .filter((a) => a.parentId === archiveId)
+    .map((a) => a.id);
+
   const allDescendants = [...children];
-  children.forEach(childId => {
+  children.forEach((childId) => {
     allDescendants.push(...getAllDescendantIds(childId, archives));
   });
-  
+
   return allDescendants;
 }
 
@@ -212,7 +217,7 @@ function getAllDescendantIds(archiveId: string, archives: Archive[]): string[] {
 const archiveIds = [archiveId, ...getAllDescendantIds(archiveId, archives)];
 
 // Example: [9, 146, 147, 148, 149]
-const params = archiveIds.map(id => `id_archive[]=${id}`).join('&');
+const params = archiveIds.map((id) => `id_archive[]=${id}`).join("&");
 
 // Step 3: Call API
 const url = `${API_URL}/documents/?${params}&length=100`;
@@ -220,10 +225,12 @@ const url = `${API_URL}/documents/?${params}&length=100`;
 ```
 
 **Pros:**
+
 - ✅ Guaranteed to include sub-folders
 - ✅ Full control over filtering
 
 **Cons:**
+
 - ❌ Multiple API parameters (bisa panjang)
 - ❌ Need to fetch archives first
 - ❌ More complex logic
@@ -240,11 +247,13 @@ const url = `${API_URL}/documents/?id_archive[]=${archiveId}&length=100`;
 ```
 
 **Pros:**
+
 - ✅ Simple API call
 - ✅ Backend handles sub-folder logic
 - ✅ Less code
 
 **Cons:**
+
 - ❌ Depends on backend implementation
 - ❌ Less control
 
@@ -290,9 +299,9 @@ GET /siadil/documents/?id_archive[]=9&length=10
 
 ```javascript
 // Count unique archive IDs
-const uniqueArchiveIds = new Set(data.data.map(d => d.id_archive));
+const uniqueArchiveIds = new Set(data.data.map((d) => d.id_archive));
 
-console.log('Unique archive IDs:', Array.from(uniqueArchiveIds));
+console.log("Unique archive IDs:", Array.from(uniqueArchiveIds));
 // Scenario A: [9]  ← Only main folder
 // Scenario B: [9, 146, 147]  ← Main + sub-folders
 ```
@@ -303,22 +312,22 @@ console.log('Unique archive IDs:', Array.from(uniqueArchiveIds));
 
 ```javascript
 // Get total documents in folder #9 (direct)
-const directDocs = data.data.filter(d => d.id_archive === 9);
+const directDocs = data.data.filter((d) => d.id_archive === 9);
 
 // Get documents in sub-folders (indirect)
-const subFolderDocs = data.data.filter(d => {
+const subFolderDocs = data.data.filter((d) => {
   return d.id_archive !== 9 && d.archive?.id_parent === 9;
 });
 
-console.log('📊 Results:');
-console.log('Direct (in folder #9):', directDocs.length);
-console.log('Sub-folders (children of #9):', subFolderDocs.length);
-console.log('Total:', data.data.length);
+console.log("📊 Results:");
+console.log("Direct (in folder #9):", directDocs.length);
+console.log("Sub-folders (children of #9):", subFolderDocs.length);
+console.log("Total:", data.data.length);
 
 if (subFolderDocs.length > 0) {
-  console.log('✅ SCENARIO B: API includes sub-folders!');
+  console.log("✅ SCENARIO B: API includes sub-folders!");
 } else {
-  console.log('❌ SCENARIO A: API only returns direct documents');
+  console.log("❌ SCENARIO A: API only returns direct documents");
 }
 ```
 
@@ -326,10 +335,10 @@ if (subFolderDocs.length > 0) {
 
 ## 📊 **Decision Matrix**
 
-| Test Result | Implementation | Code Changes Needed |
-|-------------|---------------|---------------------|
+| Test Result    | Implementation   | Code Changes Needed                            |
+| -------------- | ---------------- | ---------------------------------------------- |
 | **Scenario A** | Manual filtering | ✅ Build `id_archive[]` array with descendants |
-| **Scenario B** | Direct API call | ❌ NO changes (already working!) |
+| **Scenario B** | Direct API call  | ❌ NO changes (already working!)               |
 
 ---
 
@@ -372,21 +381,20 @@ Update `data.ts` to build multiple `id_archive[]` parameters:
 export async function getDocumentsFromAPI(
   accessToken: string,
   options?: {
-    archiveId?: string;  // NEW parameter
-    archiveIds?: string[];  // NEW: Multiple archives
+    archiveId?: string; // NEW parameter
+    archiveIds?: string[]; // NEW: Multiple archives
     length?: number;
     start?: number;
   }
 ): Promise<{ documents: Document[]; total: number; hasMore: boolean }> {
-  
-  const archiveParams = options?.archiveIds 
-    ? options.archiveIds.map(id => `id_archive[]=${id}`).join('&')
+  const archiveParams = options?.archiveIds
+    ? options.archiveIds.map((id) => `id_archive[]=${id}`).join("&")
     : options?.archiveId
     ? `id_archive[]=${options.archiveId}`
-    : '';
-  
+    : "";
+
   const url = `/api/demplon/documents?${archiveParams}&start=${start}&length=${length}`;
-  
+
   // ... rest of code
 }
 ```
@@ -398,6 +406,7 @@ export async function getDocumentsFromAPI(
 ✅ **`test-archive-documents.html`**
 
 **Features:**
+
 - 🧪 Test WITH `id_archive` filter
 - 🧪 Test WITHOUT filter (all documents)
 - 📁 Get archive #9 details
@@ -406,6 +415,7 @@ export async function getDocumentsFromAPI(
 - 📋 Raw JSON response
 
 **How to Use:**
+
 1. Open file in browser
 2. Paste access token
 3. Click "Test WITH id_archive Filter"
@@ -418,10 +428,12 @@ export async function getDocumentsFromAPI(
 After testing, we will know:
 
 1. ✅ **Does `id_archive[]=9` include sub-folders?**
+
    - Yes → Scenario B (no changes needed)
    - No → Scenario A (need manual filtering)
 
 2. ✅ **What's the document distribution?**
+
    - How many in main folder
    - How many in sub-folders
    - Total count

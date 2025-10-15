@@ -25,7 +25,7 @@ export const InfoPanel = ({
   return (
     <div
       aria-hidden={!isOpen}
-      className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-50 transform transition-[transform,opacity] duration-250 ease-[cubic-bezier(.4,0,.2,1)] will-change-transform
+      className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-lg z-50 transform transition-[transform,opacity] duration-250 ease-[cubic-bezier(.4,0,.2,1)] will-change-transform
         ${
           isOpen
             ? "translate-x-0 opacity-100"
@@ -34,13 +34,13 @@ export const InfoPanel = ({
     >
       <div className="flex flex-col h-full">
         {/* Header Panel */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
           <h3 className="font-semibold text-gray-900 dark:text-white">
             Detail Dokumen
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-950"
           >
             <svg
               className="w-6 h-6 text-gray-600 dark:text-gray-300"

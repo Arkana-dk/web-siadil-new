@@ -94,23 +94,23 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
       />
 
       {/* Main card with decorative elements */}
-      <div className="relative w-full overflow-hidden rounded-2xl border-2 border-gray-200/80 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+      <div className="relative w-full overflow-hidden rounded-2xl border-2 border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg hover:shadow-xl dark:hover:shadow-emerald-500/10 transition-all duration-300">
         {/* Decorative background patterns */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/60 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20"></div>
 
         {/* Animated floating shapes */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 animate-pulse"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 dark:from-emerald-600/10 dark:to-teal-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 animate-pulse"></div>
         <div
-          className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-teal-200/20 to-emerald-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 animate-pulse"
+          className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-teal-200/20 to-emerald-200/20 dark:from-teal-600/10 dark:to-emerald-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 animate-pulse"
           style={{ animationDelay: "1s" }}
         ></div>
 
         {/* Decorative dots pattern */}
-        <div className="absolute top-4 left-4 grid grid-cols-3 gap-1 opacity-20">
+        <div className="absolute top-4 left-4 grid grid-cols-3 gap-1 opacity-20 dark:opacity-10">
           {[...Array(9)].map((_, i) => (
             <div
               key={i}
-              className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+              className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"
             ></div>
           ))}
         </div>
@@ -123,8 +123,8 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
               <div className="flex items-center gap-3">
                 {/* Compact avatar with ring */}
                 <div className="relative flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 animate-pulse"></div>
-                  <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-white overflow-hidden">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 dark:from-emerald-500 dark:to-teal-600 animate-pulse"></div>
+                  <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-white dark:ring-gray-800 overflow-hidden">
                     {userPhoto && !imageError ? (
                       <Image
                         src={userPhoto}
@@ -142,25 +142,27 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-gray-500">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                     Welcome back to Siadil Dashboard
                   </p>
-                  <h1 className="text-2xl font-bold text-gray-900 truncate mt-0.5">
-                    <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate mt-0.5">
+                    <span className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
                       {getGreeting()},
                     </span>{" "}
-                    {userName}
+                    <span className="text-gray-900 dark:text-white">
+                      {userName}
+                    </span>
                   </h1>
 
                   {/* Breadcrumb section - compact design */}
                   <div className="mt-2">
-                    <div className="inline-flex items-center gap-1 rounded-md bg-gray-50/80 border border-gray-200 px-2 py-1 shadow-sm">
+                    <div className="inline-flex items-center gap-1 rounded-md bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 px-2 py-1 shadow-sm">
                       {dropdownItems.length > 0 && (
                         <>
                           <button
                             ref={dropdownButtonRef}
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="flex items-center justify-center rounded px-1.5 py-0.5 text-gray-600 hover:bg-white hover:text-emerald-600 transition-all duration-200"
+                            className="flex items-center justify-center rounded px-1.5 py-0.5 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-200"
                             title="Lihat Navigasi"
                           >
                             <svg
@@ -178,7 +180,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
                             </svg>
                           </button>
                           <svg
-                            className="h-3.5 w-3.5 text-gray-400"
+                            className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -205,10 +207,10 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
                       />
 
                       {currentItem && (
-                        <div className="flex items-center gap-1 rounded px-2 py-1 bg-emerald-50 border border-emerald-200">
-                          <FolderIcon className="text-emerald-600" />
+                        <div className="flex items-center gap-1 rounded px-2 py-1 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                          <FolderIcon className="text-emerald-600 dark:text-emerald-400" />
                           <span
-                            className="text-xs font-semibold text-emerald-700 whitespace-nowrap"
+                            className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap"
                             title={currentItem.label}
                           >
                             {currentItem.label}
@@ -223,10 +225,10 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
 
             {/* Right section - Time and date compact */}
             <div className="text-right flex-shrink-0 flex items-center gap-3">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg px-4 py-2.5 border border-gray-200 shadow-sm">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg px-4 py-2.5 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center justify-end gap-2 mb-1">
                   <svg
-                    className="w-5 h-5 text-emerald-500"
+                    className="w-5 h-5 text-emerald-500 dark:text-emerald-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -238,13 +240,13 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <p className="text-3xl font-bold text-gray-900 tracking-tight tabular-nums">
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight tabular-nums">
                     {formattedTime}
                   </p>
                 </div>
                 <div className="flex items-center justify-end gap-1.5">
                   <svg
-                    className="w-3.5 h-3.5 text-gray-400"
+                    className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -254,7 +256,7 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
                       clipRule="evenodd"
                     />
                   </svg>
-                  <p className="text-xs font-semibold text-gray-600">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                     {currentTime.toLocaleDateString("id-ID", {
                       weekday: "long",
                       day: "numeric",
@@ -269,11 +271,11 @@ const ModernHeader: React.FC<ModernHeaderProps> = ({
         </div>
 
         {/* Animated bottom accent line with gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 dark:from-emerald-600 dark:via-teal-600 dark:to-emerald-600 animate-pulse"></div>
 
         {/* Corner decorations */}
-        <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-emerald-200/50 rounded-tr-2xl"></div>
-        <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-teal-200/50 rounded-bl-2xl"></div>
+        <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-emerald-200/50 dark:border-emerald-700/30 rounded-tr-2xl"></div>
+        <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-teal-200/50 dark:border-teal-700/30 rounded-bl-2xl"></div>
       </div>
     </div>
   );
@@ -319,19 +321,19 @@ const DropdownMenu = ({
         animation: "scale-in 0.1s ease-out forwards",
         zIndex: 50,
       }}
-      className="origin-top-left rounded-lg bg-white border border-gray-200 shadow-lg py-1"
+      className="origin-top-left rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg py-1"
     >
       <ul>
         {items.map((item) => (
           <li key={item.id}>
             <button
               onClick={() => onItemClick(item.id)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors duration-150"
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors duration-150"
             >
-              <FolderIcon className="text-gray-400 flex-shrink-0" />
+              <FolderIcon className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
               <span className="truncate flex-1">{item.label}</span>
               <svg
-                className="w-3.5 h-3.5 text-gray-400"
+                className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

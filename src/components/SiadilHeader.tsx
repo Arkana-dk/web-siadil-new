@@ -1,23 +1,50 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 const SiadilHeader = () => {
-  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+  const { data: session } = useSession();
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Fungsi untuk set tema
-  const setTheme = (theme: "light" | "dark") => {
+  // SIMPLE & SMOOTH Toggle - Clean transition without scrollbar issue
+  const toggleDarkMode = () => {
     if (typeof window !== "undefined") {
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      localStorage.setItem("theme", theme);
+      const newMode = !isDarkMode;
+
+      // Add transition class to body only
+      document.body.classList.add("theme-transitioning");
+
+      // Apply theme change immediately - CSS handles smooth transition
+      setIsDarkMode(newMode);
+
+      if (newMode) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+      }
+
+      // Remove transition class after animation completes
+      setTimeout(() => {
+        document.body.classList.remove("theme-transitioning");
+      }, 450); // 400ms transition + 50ms buffer
     }
-    setShowThemeDropdown(false);
   };
 
   // Auto load theme dari localStorage saat pertama render
   useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("theme");
-      if (saved === "dark") {
+      const systemDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      const shouldBeDark = saved === "dark" || (!saved && systemDark);
+
+      setIsDarkMode(shouldBeDark);
+
+      if (shouldBeDark) {
         document.documentElement.classList.add("dark");
       } else {
         document.documentElement.classList.remove("dark");
@@ -26,7 +53,7 @@ const SiadilHeader = () => {
   }, []);
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-2">
+    <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-6 py-2 transition-colors duration-300">
       <div className="flex items-center justify-end">
         <div className="flex items-center space-x-4">
           {/* Search Command Bar */}
@@ -34,10 +61,10 @@ const SiadilHeader = () => {
             <input
               type="text"
               placeholder="Search command..."
-              className="pl-4 pr-12 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-64 text-sm bg-white text-gray-900"
+              className="pl-4 pr-12 py-1 border border-gray-300 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent w-64 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-300"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <kbd className="inline-flex items-center border bg-gray-100 rounded px-2 text-xs font-sans font-normal text-gray-400">
+              <kbd className="inline-flex items-center border border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 rounded px-2 text-xs font-sans font-normal text-gray-400 dark:text-gray-500 transition-colors duration-300">
                 <span className="text-xs">⌘</span>
                 <span className="text-xs ml-1">K</span>
               </kbd>
@@ -45,21 +72,22 @@ const SiadilHeader = () => {
           </div>
 
           {/* Notification Bell Icon */}
-          <button className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none">
+          <button className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none transition-colors duration-200">
             {/* Efek ping */}
             <span className="ping-notif"></span>
             {/* Bulatan hijau tetap */}
-            <span className="bg-[#01793B] absolute top-1 right-1 block h-2 w-2 rounded-full ring-2 ring-white"></span>
+            <span className="bg-[#01793B] absolute top-1 right-1 block h-2 w-2 rounded-full ring-2 ring-white dark:ring-black transition-colors duration-300"></span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-gray-900"
+              className="h-5 w-5 text-gray-900 dark:text-gray-100 transition-colors duration-300"
               width="20"
               height="20"
               fill="none"
               viewBox="0 0 24 24"
               preserveAspectRatio="xMidYMid meet"
               stroke="currentColor"
-              strokeWidth={1.7}>
+              strokeWidth={1.7}
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -68,102 +96,135 @@ const SiadilHeader = () => {
             </svg>
           </button>
 
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center overflow-hidden border-2 border-white">
-            <span className="text-white font-semibold text-xs">DF</span>
+          {/* Avatar - Dynamic from session (MOVED TO LEFT) */}
+          <div className="relative group">
+            {session?.user ? (
+              <>
+                {session.user.pic ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700 transition-colors duration-300 cursor-pointer hover:border-green-500 dark:hover:border-green-400">
+                    <Image
+                      src={session.user.pic}
+                      alt={session.user.name}
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center overflow-hidden border-2 border-gray-200 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:scale-110 hover:border-green-400">
+                    <span className="text-white font-semibold text-xs">
+                      {session.user.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .substring(0, 2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Tooltip on hover */}
+                <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-3 z-50 min-w-[200px] border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center space-x-3 mb-2">
+                    {session.user.pic ? (
+                      <Image
+                        src={session.user.pic}
+                        alt={session.user.name}
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">
+                          {session.user.name
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .substring(0, 2)}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900 dark:!text-white">
+                        {session.user.name}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:!text-gray-200">
+                        {session.user.username}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                    <p className="text-xs text-gray-600 dark:!text-gray-200">
+                      <span className="font-medium dark:!text-white">
+                        Organization:
+                      </span>{" "}
+                      {session.user.organization?.name || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse"></div>
+            )}
           </div>
 
-          {/* Theme Icon & Dropdown */}
-          <div className="relative">
-            <button
-              className="p-1.5 rounded-full hover:bg-gray-100 focus:outline-none"
-              onClick={() => setShowThemeDropdown((v) => !v)}>
-              {/* Matahari icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-900"
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                preserveAspectRatio="xMidYMid meet"
-                stroke="currentColor"
-                strokeWidth={1.7}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.05 17.95l-1.414 1.414M17.95 17.95l-1.414-1.414M6.05 6.05L4.636 7.464"
-                />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="5"
-                  stroke="currentColor"
-                  strokeWidth={1.7}
-                />
-              </svg>
-            </button>
-            {/* Dropdown Theme */}
+          {/* 🌓 Compact Dark Mode Toggle with Ripple Effect (MOVED TO RIGHT) */}
+          <button
+            onClick={toggleDarkMode}
+            className="relative w-8 h-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-indigo-600 dark:to-purple-700 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-black transition-all duration-300 ease-in-out group overflow-hidden shadow-sm hover:shadow-md"
+            aria-label="Toggle dark mode"
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {/* Sun Icon (Light Mode) */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`absolute inset-0 m-auto w-4 h-4 transition-all duration-500 ease-in-out ${
+                isDarkMode
+                  ? "opacity-0 scale-0 rotate-180"
+                  : "opacity-100 scale-100 rotate-0 text-yellow-600"
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707"
+              />
+              <circle cx="12" cy="12" r="4" strokeWidth={2.5} />
+            </svg>
+
+            {/* Moon Icon (Dark Mode) */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`absolute inset-0 m-auto w-4 h-4 transition-all duration-500 ease-in-out ${
+                isDarkMode
+                  ? "opacity-100 scale-100 rotate-0 text-indigo-100"
+                  : "opacity-0 scale-0 -rotate-180"
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+              />
+            </svg>
+
+            {/* Glow effect on hover */}
             <div
-              className={`absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded shadow-lg z-10 transition-all duration-300
-                ${
-                  showThemeDropdown
-                    ? "opacity-100 translate-y-0 pointer-events-auto"
-                    : "opacity-0 -translate-y-4 pointer-events-none"
-                }
-              `}
-              style={{ willChange: "transform, opacity" }}>
-              <button
-                className="flex items-center w-full px-3 py-1.5 hover:bg-gray-50 text-gray-900 transition-colors text-sm"
-                onClick={() => setTheme("light")}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3.5 w-3.5 mr-2 text-gray-900"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  preserveAspectRatio="xMidYMid meet"
-                  stroke="currentColor"
-                  strokeWidth={1.7}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.05 17.95l-1.414 1.414M17.95 17.95l-1.414-1.414M6.05 6.05L4.636 7.464"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="5"
-                    stroke="currentColor"
-                    strokeWidth={1.7}
-                  />
-                </svg>
-                Light
-              </button>
-              <button
-                className="flex items-center w-full px-3 py-1.5 hover:bg-gray-50 text-gray-900 transition-colors text-sm"
-                onClick={() => setTheme("dark")}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3.5 w-3.5 mr-2 text-gray-900"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  preserveAspectRatio="xMidYMid meet"
-                  stroke="currentColor"
-                  strokeWidth={1.7}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"
-                  />
-                </svg>
-                Dark
-              </button>
-            </div>
-          </div>
+              className={`absolute inset-0 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${
+                isDarkMode ? "bg-white" : "bg-yellow-400"
+              }`}
+            ></div>
+          </button>
         </div>
       </div>
     </div>
